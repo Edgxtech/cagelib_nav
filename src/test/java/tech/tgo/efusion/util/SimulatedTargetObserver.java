@@ -77,6 +77,8 @@ public class SimulatedTargetObserver extends TimerTask {
 
                     // TODO, this needs to be rewired such that it should from test target_a to test target_b.
 
+                    //UP TO HERE, for some reason getting 4 unique targets, should only be two
+
                     for (String secondary_asset_id : asset.getTdoa_asset_ids()) {
                         Long obsId = assetToObservationIdMapping.get(asset.getId()+":"+secondary_asset_id+"_"+ObservationType.tdoa.name());
                         if (obsId==null)

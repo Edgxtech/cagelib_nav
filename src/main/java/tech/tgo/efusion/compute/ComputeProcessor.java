@@ -197,6 +197,7 @@ public class ComputeProcessor implements Runnable {
 
         // For each unique target, pad out the matrices
         // 1. For 1 target, Thi=4x4, 2, 8x8 ... etc...
+        log.debug("Unique targets: "+uniqueTargets.size());
         matrice_size = uniqueTargets.size()*4;
 
         // initialise Xinit [for reuse to re-initialise Xk]

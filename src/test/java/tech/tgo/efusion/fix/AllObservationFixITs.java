@@ -140,8 +140,8 @@ public class AllObservationFixITs implements EfusionListener {
         {{
             put(asset_a.getId(), asset_a);
             put(asset_b.getId(), asset_b);
-            put(asset_c.getId(), asset_c);
-            put(asset_d.getId(), asset_d);
+            //put(asset_c.getId(), asset_c);
+            //put(asset_d.getId(), asset_d);
         }};
         simulatedTargetObserver.setTestAssets(assets);
         simulatedTargetObserver.run();
