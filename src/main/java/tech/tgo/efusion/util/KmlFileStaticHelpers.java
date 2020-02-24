@@ -410,7 +410,7 @@ public class KmlFileStaticHelpers {
                     dnode.appendChild(measPlacemark);
 
                     Element name = doc.createElement("name");
-                    name.appendChild(doc.createTextNode("TDOA:"+geoMission.getObservations().get(ele).getAssetId()+"/"+geoMission.getObservations().get(ele).getAssetId_b()));
+                    name.appendChild(doc.createTextNode("TDOA:"+geoMission.getObservations().get(ele).getAssetId()+"/"+geoMission.getObservations().get(ele).getTargetId_b()));
                     measPlacemark.appendChild(name);
 
                     Element styleUrl = doc.createElement("styleUrl");

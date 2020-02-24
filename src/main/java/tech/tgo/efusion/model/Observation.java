@@ -51,9 +51,12 @@ public class Observation {
     /* Asset Id */
     String assetId;
 
-    String assetId_b; // For TDOA only
-    double xb; // For TDOA only
-    double yb; // For TDOA only
+    /* Target Id */
+    String targetId;
+
+    String targetId_b; // For TDOA only
+//    double xb; // For TDOA only  -- IRRELEVANT for nav implementation
+//    double yb; // For TDOA only
     double lat_b; // For TDOA only
     double lon_b; // For TDOA only
 
@@ -103,28 +106,37 @@ public class Observation {
         this.assetId = assetId;
     }
 
-    public double getXb() {
-        return xb;
+//    public double getXb() {
+//        return xb;
+//    }
+//
+//    public void setXb(double xb) {
+//        this.xb = xb;
+//    }
+//
+//    public double getYb() {
+//        return yb;
+//    }
+//
+//    public void setYb(double yb) {
+//        this.yb = yb;
+//    }
+
+//    public String getAssetId_b() {
+//        return assetId_b;
+//    }
+//
+//    public void setAssetId_b(String assetId_b) {
+//        this.assetId_b = assetId_b;
+//    }
+
+
+    public String getTargetId_b() {
+        return targetId_b;
     }
 
-    public void setXb(double xb) {
-        this.xb = xb;
-    }
-
-    public double getYb() {
-        return yb;
-    }
-
-    public void setYb(double yb) {
-        this.yb = yb;
-    }
-
-    public String getAssetId_b() {
-        return assetId_b;
-    }
-
-    public void setAssetId_b(String assetId_b) {
-        this.assetId_b = assetId_b;
+    public void setTargetId_b(String targetId_b) {
+        this.targetId_b = targetId_b;
     }
 
     public Long getId() {
@@ -229,5 +241,13 @@ public class Observation {
 
     public void setCrossed_border(Boolean crossed_border) {
         this.crossed_border = crossed_border;
+    }
+
+    public String getTargetId() {
+        return targetId;
+    }
+
+    public void setTargetId(String targetId) {
+        this.targetId = targetId;
     }
 }

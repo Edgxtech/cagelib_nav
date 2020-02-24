@@ -37,8 +37,10 @@ public class Helpers {
         double b = matrix[0][1];
         double c = matrix[1][0];
         double d = matrix[1][1];
+        System.out.println("a: "+a+", d: "+d);
         double e1 = ((a+d) + Math.sqrt( Math.pow(a-d,2) + 4*b*c))/2;
         double e2 = ((a+d) - Math.sqrt( Math.pow(a-d,2) + 4*b*c))/2;
+        System.out.println("e1: "+e1+", e2: "+e2);
         return new double[]{e1,e2};
     }
     public static double[] getEigenvector(double[][] matrix, double eigenvalue) {

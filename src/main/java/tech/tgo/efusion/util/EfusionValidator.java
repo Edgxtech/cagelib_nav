@@ -74,7 +74,7 @@ public class EfusionValidator {
             if (lon_b < 0 || lon_b>180) {
                 throw new ObservationException("(second) Assets longitude should range between +- 0->180");
             }
-            if (observation.getAssetId_b()==null || observation.getAssetId_b().isEmpty()) {
+            if (observation.getTargetId_b()==null || observation.getTargetId_b().isEmpty()) {
                 throw new ObservationException("No (second) Asset Id was specified");
             }
 

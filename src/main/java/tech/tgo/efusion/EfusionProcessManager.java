@@ -97,12 +97,14 @@ public class EfusionProcessManager implements Serializable {
 
         /* There is a second asset to register its location */
         if (obs.getObservationType().equals(ObservationType.tdoa)) {
-            double[] utm_coords_b = Helpers.convertLatLngToUtmNthingEasting(obs.getLat_b(), obs.getLon_b());
-            obs.setYb(utm_coords_b[0]);
-            obs.setXb(utm_coords_b[1]);
+//            double[] utm_coords_b = Helpers.convertLatLngToUtmNthingEasting(obs.getLat_b(), obs.getLon_b());
+//            obs.setYb(utm_coords_b[0]);
+//            obs.setXb(utm_coords_b[1]);
+//
+//            Asset asset_b = new Asset(obs.getAssetId_b(),new double[]{obs.getLat_b(),obs.getLon_b()});
+//            this.geoMission.getAssets().put(obs.getAssetId_b(),asset_b);
 
-            Asset asset_b = new Asset(obs.getAssetId_b(),new double[]{obs.getLat_b(),obs.getLon_b()});
-            this.geoMission.getAssets().put(obs.getAssetId_b(),asset_b);
+            // TODO, this is now performed via target state estimate
         }
 
         if (this.geoMission.getShowMeas()) {
@@ -121,20 +123,21 @@ public class EfusionProcessManager implements Serializable {
 
             /* TDOA MEASUREMENT */
             if (obs.getObservationType().equals(ObservationType.tdoa)) {
-                List<double[]> measurementHyperbola = new ArrayList<double[]>();
-                double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2;
-                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2; double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2)));
-                double ca = (obs.getXb()-obs.getX())/(2*c); double sa = (obs.getYb()-obs.getY())/(2*c); //# COS and SIN of rot angle
-                for (double t = -2; t<= 2; t += 0.1) {
-                    double X = a*Math.cosh(t); double Y = b*Math.sinh(t); //# Hyperbola branch
-                    double x = (obs.getX()+obs.getXb())/2 + X*ca - Y*sa; //# Rotated and translated
-                    double y = (obs.getY()+obs.getYb())/2 + X*sa + Y*ca;
-                    UTMRef utmMeas = new UTMRef(x, y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
-                    LatLng ltln = utmMeas.toLatLng();
-                    measurementHyperbola.add(new double[]{ltln.getLat(),ltln.getLng()});
-                }
-                this.geoMission.hyperbolasToShow.add(obs.getId());
-                obs.setHyperbolaGeometry(measurementHyperbola);
+                log.debug("Temporary disabled tdoa observation drawing");
+//                List<double[]> measurementHyperbola = new ArrayList<double[]>();
+//                double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2;
+//                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2; double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2)));
+//                double ca = (obs.getXb()-obs.getX())/(2*c); double sa = (obs.getYb()-obs.getY())/(2*c); //# COS and SIN of rot angle
+//                for (double t = -2; t<= 2; t += 0.1) {
+//                    double X = a*Math.cosh(t); double Y = b*Math.sinh(t); //# Hyperbola branch
+//                    double x = (obs.getX()+obs.getXb())/2 + X*ca - Y*sa; //# Rotated and translated
+//                    double y = (obs.getY()+obs.getYb())/2 + X*sa + Y*ca;
+//                    UTMRef utmMeas = new UTMRef(x, y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
+//                    LatLng ltln = utmMeas.toLatLng();
+//                    measurementHyperbola.add(new double[]{ltln.getLat(),ltln.getLng()});
+//                }
+//                this.geoMission.hyperbolasToShow.add(obs.getId());
+//                obs.setHyperbolaGeometry(measurementHyperbola);
             }
 
             /* AOA MEASUREMENT */

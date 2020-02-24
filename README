@@ -1,10 +1,10 @@
-eFusion Library (efusionlib)
+eFusion Library - Navigation (efusionlib_nav)
 
 eFusion (efusion) is a sensor fusion library for position location and tracking
 
 Features
 
-    * Location estimation with Tracking and Fix Mode
+    * Own location estimation with Tracking and Fix Mode
     * Takes sensor measurements including TDOA, AOA and Range
     * Optional generation of KML result output, client implementation alternate
 
@@ -13,7 +13,7 @@ How to Use
     /* Add to project dependencies */
     <dependency>
         <groupId>tech.tgo.efusion</groupId>
-        <artifactId>efusionlib</artifactId>
+        <artifactId>efusionlib_nav</artifactId>
         <version>0.1</version>
     </dependency>
 

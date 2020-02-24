@@ -74,6 +74,9 @@ public class SimulatedTargetObserver extends TimerTask {
 
                 if (asset.getProvide_tdoa()!=null && asset.getProvide_tdoa() && asset.getTdoa_asset_ids() != null && !asset.getTdoa_asset_ids().isEmpty()) {
                     /* Second asset that is providing shared tdoa measurement */
+
+                    // TODO, this needs to be rewired such that it should from test target_a to test target_b.
+
                     for (String secondary_asset_id : asset.getTdoa_asset_ids()) {
                         Long obsId = assetToObservationIdMapping.get(asset.getId()+":"+secondary_asset_id+"_"+ObservationType.tdoa.name());
                         if (obsId==null)
@@ -91,9 +94,10 @@ public class SimulatedTargetObserver extends TimerTask {
                         log.debug("Asset: "+asset.getId()+", 2nd Asset: "+secondary_asset_id+", Meas tdoa: "+meas_tdoa);
 
                         Observation obs_c = new Observation(obsId, asset.getId(), asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
-                        obs_c.setAssetId_b(testAssets.get(secondary_asset_id).getId());
-                        obs_c.setLat_b(asset1.getCurrent_loc()[0]);
-                        obs_c.setLon_b(asset1.getCurrent_loc()[1]);
+                        //obs_c.setAssetId_b(testAssets.get(secondary_asset_id).getId());  /// Replaced with below for Nav use case
+                        obs_c.setTargetId_b(testAssets.get(secondary_asset_id).getId());
+//                        obs_c.setLat_b(asset1.getCurrent_loc()[0]);  // IRRELEVANT in nav use case
+//                        obs_c.setLon_b(asset1.getCurrent_loc()[1]);
                         obs_c.setMeas(meas_tdoa); // tdoa in seconds
                         obs_c.setObservationType(ObservationType.tdoa);
                         efusionProcessManager.addObservation(obs_c);

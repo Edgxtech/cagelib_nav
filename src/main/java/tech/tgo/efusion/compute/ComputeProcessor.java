@@ -1,10 +1,6 @@
 package tech.tgo.efusion.compute;
 
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.linear.LUDecomposition;
+import org.apache.commons.math3.linear.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.tgo.efusion.EfusionListener;
@@ -35,14 +31,17 @@ public class ComputeProcessor implements Runnable {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
 
-    double[][] ThiData = { {1,0,1, 0}, {0,1,0,1}, {0,0,0,0}, {0,0,0,0}};
-    RealMatrix Thi = new Array2DRowRealMatrix(ThiData);
+//    double[][] ThiData = { {1,0,0,0,1,0,0,0}, {0,1,0,0,0,1,0,0}, {0,0,1,0,0,0,1,0}, {0,0,0,1,0,0,0,1}, {0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}} ;
+//    RealMatrix Thi = new Array2DRowRealMatrix(ThiData);
+//
+//    double[][] controlData = { {0}, {0}, {0}, {0}};
+//    RealMatrix B = new Array2DRowRealMatrix(controlData);
+//
+//    double[][] initCovarData = {{1,0,0,0,0,0,0,0}, {0,1,0,0,0,0,0,0}, {0,0,1,0,0,0,0,0}, {0,0,0,1,0,0,0,0}, {0,0,0,0,1,0,0,0},{0,0,0,0,0,1,0,0},{0,0,0,0,0,0,1,0},{0,0,0,0,0,0,0,1}};
+//    RealMatrix Pinit = new Array2DRowRealMatrix(initCovarData);
 
-    double[][] controlData = { {0}, {0}, {0}, {0}};
-    RealMatrix B = new Array2DRowRealMatrix(controlData);
-
-    double[][] initCovarData = {{1, 0, 0, 0}, {0, 1, 0 ,0}, {0, 0, 1, 0}, {0, 0, 0 ,1}};
-    RealMatrix Pinit = new Array2DRowRealMatrix(initCovarData);
+    RealMatrix Thi;
+    RealMatrix Pinit;
 
     RealMatrix Qu;
     RealMatrix Rk;
@@ -50,14 +49,20 @@ public class ComputeProcessor implements Runnable {
     RealVector Xk;
     RealMatrix Pk;
 
-    double[] innovd = {0,0,0,0};
+//    double[] innovd = {0,0,0,0,0,0,0,0};
+//    RealVector innov;
+//
+//    double[][] P_innovd = {{0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}};
+//    RealMatrix P_innov;
+//
+//    double[][] eyeData = {{1,0,0,0,0,0,0,0}, {0,1,0,0,0,0,0,0}, {0,0,1,0,0,0,0,0}, {0,0,0,1,0,0,0,0}, {0,0,0,0,1,0,0,0},{0,0,0,0,0,1,0,0},{0,0,0,0,0,0,1,0},{0,0,0,0,0,0,0,1}};
+//    RealMatrix eye = new Array2DRowRealMatrix(eyeData);
+
     RealVector innov;
-
-    double[][] P_innovd = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
     RealMatrix P_innov;
-
-    double[][] eyeData = {{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}};
-    RealMatrix eye = new Array2DRowRealMatrix(eyeData);
+    //double[][] eyeData;
+    //RealMatrix eye = new Array2DRowRealMatrix(eyeData);;
+    RealMatrix eye;
 
     RealMatrix H;
     double xk;
@@ -65,6 +70,10 @@ public class ComputeProcessor implements Runnable {
     RealMatrix K;
 
     KmlFileHelpers kmlFileHelpers = null;
+
+    Map<String,Integer[]> stateIndexMap = new HashMap<String,Integer[]>();
+
+    int matrice_size;
 
     /*
      * Create processor for the given config, observations and client implemented listener
@@ -85,43 +94,55 @@ public class ComputeProcessor implements Runnable {
         double[][] procNoiseData = geoMission.getFilterProcessNoise();
         Qu = new Array2DRowRealMatrix(procNoiseData);
 
-        /* Initialise filter state */
-        double[] start_x_y;
-        if (this.geoMission.getFilterUseSpecificInitialCondition()!=null && this.geoMission.getFilterUseSpecificInitialCondition()) {
-            double[] asset_utm = Helpers.convertLatLngToUtmNthingEasting(this.geoMission.getFilterSpecificInitialLat(), this.geoMission.getFilterSpecificInitialLon());
-            start_x_y = new double[]{asset_utm[1], asset_utm[0]};
-            log.debug("Using SPECIFIC initial condition: "+this.geoMission.getFilterSpecificInitialLat()+", "+this.geoMission.getFilterSpecificInitialLon()+" ["+start_x_y[1]+", "+start_x_y[0]+"]");
-        }
-        else {
-            List<Asset> assetList = new ArrayList<Asset>(this.geoMission.getAssets().values());
-            if (assetList.size() > 1) {
-                Random rand = new Random();
-                Asset randAssetA = assetList.get(rand.nextInt(assetList.size()));
-                assetList.remove(randAssetA);
-                Asset randAssetB = assetList.get(rand.nextInt(assetList.size()));
-                //log.debug("Finding rudimentary start point between two random observations: " + randAssetA.getId() + "," + randAssetB.getId());
-                start_x_y = findRudimentaryStartPoint(randAssetA, randAssetB, (Math.random() - 0.5) * 100000);
-                log.debug("Using RANDOM initial condition: near asset(s) ['"+randAssetA.getId() + "' & '" + randAssetB.getId()+"']: "+start_x_y[1]+", "+start_x_y[0]);
-            } else {
-                Asset asset = assetList.get(0);
-                double[] asset_utm = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
-                start_x_y = new double[]{asset_utm[1] + 5000, asset_utm[0] - 5000};
-                log.debug("Using RANDOM initial condition: near asset ["+asset.getId()+"]: "+start_x_y[1]+", "+start_x_y[0]);
-            }
-        }
+        /* Initialise filter state */   /// TODO, reimplement logic here, for now just use
+//        double[] start_x_y;
+//        if (this.geoMission.getFilterUseSpecificInitialCondition()!=null && this.geoMission.getFilterUseSpecificInitialCondition()) {
+//            double[] asset_utm = Helpers.convertLatLngToUtmNthingEasting(this.geoMission.getFilterSpecificInitialLat(), this.geoMission.getFilterSpecificInitialLon());
+//            start_x_y = new double[]{asset_utm[1], asset_utm[0]};
+//            log.debug("Using SPECIFIC initial condition: "+this.geoMission.getFilterSpecificInitialLat()+", "+this.geoMission.getFilterSpecificInitialLon()+" ["+start_x_y[1]+", "+start_x_y[0]+"]");
+//        }
+//        else {
+//            List<Asset> assetList = new ArrayList<Asset>(this.geoMission.getAssets().values());
+//            if (assetList.size() > 1) {
+//                Random rand = new Random();
+//                Asset randAssetA = assetList.get(rand.nextInt(assetList.size()));
+//                assetList.remove(randAssetA);
+//                Asset randAssetB = assetList.get(rand.nextInt(assetList.size()));
+//                //log.debug("Finding rudimentary start point between two random observations: " + randAssetA.getId() + "," + randAssetB.getId());
+//                start_x_y = findRudimentaryStartPoint(randAssetA, randAssetB, (Math.random() - 0.5) * 100000);
+//                log.debug("Using RANDOM initial condition: near asset(s) ['"+randAssetA.getId() + "' & '" + randAssetB.getId()+"']: "+start_x_y[1]+", "+start_x_y[0]);
+//            } else {
+//                Asset asset = assetList.get(0);
+//                double[] asset_utm = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+//                start_x_y = new double[]{asset_utm[1] + 5000, asset_utm[0] - 5000};
+//                log.debug("Using RANDOM initial condition: near asset ["+asset.getId()+"]: "+start_x_y[1]+", "+start_x_y[0]);
+//            }
+//        }
+//        log.debug("Filter start state: "+start_x_y[0]+","+start_x_y[1]);
+//        //double[] initStateData = {start_x_y[0], start_x_y[1], 1, 1};
 
-        log.debug("Filter start state: "+start_x_y[0]+","+start_x_y[1]);
-        double[] initStateData = {start_x_y[0], start_x_y[1], 1, 1};
+        log.debug("Defining state vector, size: "+matrice_size);
+        RealVector Xinit = new ArrayRealVector(matrice_size);
 
-        RealVector Xinit = new ArrayRealVector(initStateData);
+        // TODO, for single target, lat, lon, 1, 1.    For two targets; lat, lon, lat2, lon2, 1,1,1,1 etc...
+
+        //RealVector Xinit = new ArrayRealVector(initStateData);
         Xk = Xinit;
+
+
         Pk = Pinit.scalarMultiply(1000.0);
 
         log.trace("Initialising Stage Observations as current observations, #: "+this.geoMission.observations.size());
         setStaged_observations(this.geoMission.observations);
+
     }
 
     public void setObservations(Map<Long, Observation> observations) {
+
+        /// NOTE, this cannot have any new targets to process, since it will affect the size of state matrices
+        // then this step "int[] stateIndexes = stateIndexMap.get(obs.getTargetId());" will be null
+
+
         Comparator<Map.Entry<Long, Observation>> valueComparator = new Comparator<Map.Entry<Long, Observation>>() {
             @Override
             public int compare(Map.Entry<Long, Observation> e1, Map.Entry<Long, Observation> e2) {
@@ -138,6 +159,96 @@ public class ComputeProcessor implements Runnable {
             sortedByValue.put(entry.getKey(), entry.getValue());
         }
         this.observations = sortedByValue;
+
+
+        // Determine an initial guess
+        double[] start_x_y;
+        List<Asset> assetList = new ArrayList<Asset>(this.geoMission.getAssets().values());
+        if (assetList.size() > 1) {
+            Random rand = new Random();
+            Asset randAssetA = assetList.get(rand.nextInt(assetList.size()));
+            assetList.remove(randAssetA);
+            Asset randAssetB = assetList.get(rand.nextInt(assetList.size()));
+            //log.debug("Finding rudimentary start point between two random observations: " + randAssetA.getId() + "," + randAssetB.getId());
+            start_x_y = findRudimentaryStartPoint(randAssetA, randAssetB, (Math.random() - 0.5) * 100000);
+            log.debug("Using RANDOM initial condition: near asset(s) ['"+randAssetA.getId() + "' & '" + randAssetB.getId()+"']: "+start_x_y[1]+", "+start_x_y[0]);
+        } else {
+            Asset asset = assetList.get(0);
+            double[] asset_utm = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+            start_x_y = new double[]{asset_utm[1] + 5000, asset_utm[0] - 5000};
+            log.debug("Using RANDOM initial condition: near asset ["+asset.getId()+"]: "+start_x_y[1]+", "+start_x_y[0]);
+        }
+        log.debug("Filter start state: "+start_x_y[0]+","+start_x_y[1]);
+        //double[] initStateData = {start_x_y[0], start_x_y[1], 1, 1};
+
+
+        // Determine targets requiring estimation - extract from set of observations
+        Set<String> uniqueTargets = new HashSet<String>();
+        for (Observation obs : this.observations.values()) {
+
+            //1. determine all unique targets, then set the size of relevant matrices
+            //2. index the state indexes in the stateIndexMap
+            uniqueTargets.add(obs.getTargetId());
+            if (obs.getTargetId_b()!=null) {
+                uniqueTargets.add(obs.getTargetId_b());
+            }
+
+        }
+
+        // For each unique target, pad out the matrices
+        // 1. For 1 target, Thi=4x4, 2, 8x8 ... etc...
+        matrice_size = uniqueTargets.size()*4;
+
+        // initialise Xinit [for reuse to re-initialise Xk]
+        log.debug("Defining state vector, size: "+matrice_size);
+        RealVector Xinit = new ArrayRealVector(matrice_size);
+
+        //initialise Thi
+        Thi = new Array2DRowRealMatrix(matrice_size, matrice_size);
+        int i=0;
+        for (String uniqueTarget : uniqueTargets) {//(int i=0; i<uniqueTargets.size(); i=i+2) {
+            // Create like this: 1 0 0 0 1 0 0 0; 0 1 0 0 0 1 0 0 ...
+            Thi.setEntry(i,i,1);                             // x
+            Thi.setEntry(i,i+(matrice_size/2),1);        // delta_x
+            Thi.setEntry(i+1,i+1,1);                  // y
+            Thi.setEntry(i+1,i+1+(matrice_size/2),1); // delta_y
+
+            // Create like this: init_lat, init_lon, init_lat_b, init_lon_b, 1, 1, 1, 1
+            Xinit.setEntry(i,start_x_y[0]); // x
+            Xinit.setEntry(i+(matrice_size/2), 1); // delta_x
+            Xinit.setEntry(i+1, start_x_y[1]); // y
+            Xinit.setEntry(i+1+(matrice_size/2), 1); // delta_y
+
+            stateIndexMap.put(uniqueTarget, new Integer[]{i, i+1});
+            i=i+2;
+        }
+        log.debug("Set Thi as: "+Thi);
+
+        //RealVector Xinit = new ArrayRealVector(initStateData);
+        Xk = Xinit;
+        log.debug("Set Xk as: "+Xk);
+
+        Pinit = MatrixUtils.createRealIdentityMatrix(matrice_size);//new Array2DRowRealMatrix(matrice_size, matrice_size);
+        MatrixUtils.createRealIdentityMatrix(matrice_size);
+
+        eye = MatrixUtils.createRealIdentityMatrix(matrice_size); //new Array2DRowRealMatrix(matrice_size, matrice_size);
+
+        log.debug("Set Eye as: "+eye);
+//
+//        double[][] ThiData = { {1,0,0,0,1,0,0,0}, {0,1,0,0,0,1,0,0}, {0,0,1,0,0,0,1,0}, {0,0,0,1,0,0,0,1}, {0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}} ;
+//        RealMatrix Thi = new Array2DRowRealMatrix(ThiData);
+
+//        double[][] initCovarData = {{1,0,0,0,0,0,0,0}, {0,1,0,0,0,0,0,0}, {0,0,1,0,0,0,0,0}, {0,0,0,1,0,0,0,0}, {0,0,0,0,1,0,0,0},{0,0,0,0,0,1,0,0},{0,0,0,0,0,0,1,0},{0,0,0,0,0,0,0,1}};
+//        RealMatrix Pinit = new Array2DRowRealMatrix(initCovarData);
+
+//        double[] innovd = {0,0,0,0,0,0,0,0};
+//        RealVector innov;
+
+//        double[][] P_innovd = {{0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0}};
+//        RealMatrix P_innov;
+
+//        double[][] eyeData = {{1,0,0,0,0,0,0,0}, {0,1,0,0,0,0,0,0}, {0,0,1,0,0,0,0,0}, {0,0,0,1,0,0,0,0}, {0,0,0,0,1,0,0,0},{0,0,0,0,0,1,0,0},{0,0,0,0,0,0,1,0},{0,0,0,0,0,0,0,1}};
+//        RealMatrix eye = new Array2DRowRealMatrix(eyeData);
     }
 
     public void run()
@@ -187,8 +298,8 @@ public class ComputeProcessor implements Runnable {
             Pk = (Thi.multiply(Pk).multiply(Thi.transpose())).add(Qu);
 
             /* reinitialise various collections */
-            innov = new ArrayRealVector(innovd);
-            P_innov = new Array2DRowRealMatrix(P_innovd);
+            innov = new ArrayRealVector(matrice_size); //(innovd);
+            P_innov = new Array2DRowRealMatrix(matrice_size, matrice_size); //(P_innovd);
             filterObservationDTOs.removeAllElements();
             RealVector nonAoaNextState = null;
             Iterator obsIterator = this.observations.values().iterator();
@@ -197,8 +308,18 @@ public class ComputeProcessor implements Runnable {
 
                 Observation obs = (Observation) obsIterator.next();
 
-                xk = Xk.getEntry(0);
-                yk = Xk.getEntry(1);
+                // For each observation, get the state for the target its attempting to measure.
+                // I.e. the Target if is a single target run, will be the first two variables.
+                //    If two target run, will be either the first or second params. The observation should know what target it is.
+                //     Needs to support many targets, and ability to retrieve that targets state easily
+                //     A map containing the filter state x/y indexes, mapped to the targets ID?
+                // State index map should be set up upon mission creation
+                Integer[] stateIndexes = stateIndexMap.get(obs.getTargetId());
+                log.trace("Retrieved state indices: "+stateIndexes[0]+","+stateIndexes[1]);
+
+                xk = Xk.getEntry(stateIndexes[0]);
+                yk = Xk.getEntry(stateIndexes[1]);
+
 
                 double f_est = 0.0;
                 double d = 0.0;
@@ -206,7 +327,12 @@ public class ComputeProcessor implements Runnable {
 
                 if (obs.getObservationType().equals(ObservationType.range)) {
 
-                    H = recalculateH(obs.getX(), obs.getY(), xk, yk);
+//                    H = recalculateH(obs.getX(), obs.getY(), xk, yk);
+                    double R1 = Math.sqrt(Math.pow((obs.getX()-xk),2) + Math.pow(obs.getY()-yk,2));    // Note: obs.X/Y are the tower (asset) known locations
+                    double dfdx = -(obs.getX()-xk)/R1;
+                    double dfdy = -(obs.getY()-yk)/R1;
+                    double[][] jacobianData = {{0, 0, dfdx, dfdy}};
+                    H = new Array2DRowRealMatrix(jacobianData);
 
                     f_est = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow(obs.getY() - yk, 2));
 
@@ -216,9 +342,28 @@ public class ComputeProcessor implements Runnable {
                 }
                 else if (obs.getObservationType().equals(ObservationType.tdoa)) {
 
-                    H = recalculateH_TDOA(obs.getX(), obs.getY(), obs.getXb(), obs.getYb(), xk, yk);//.scalarMultiply(-1); // temp scalar mult this oddly seems to fix an issue
 
-                    f_est = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow(obs.getY() - yk, 2)) - Math.sqrt(Math.pow((obs.getXb() - xk), 2) + Math.pow(obs.getYb() - yk, 2));
+                    // If its TDOA, also need state indexes for the second asset the observation is using
+                    Integer[] stateIndexes_b = stateIndexMap.get(obs.getTargetId_b());
+                    double xk_b = Xk.getEntry(stateIndexes_b[0]);
+                    double yk_b = Xk.getEntry(stateIndexes_b[1]);
+
+
+                    //H = recalculateH_TDOA(obs.getX(), obs.getY(), obs.getXb(), obs.getYb(), xk, yk);//.scalarMultiply(-1); // temp scalar mult this oddly seems to fix an issue
+                    // ref method: public RealMatrix recalculateH_TDOA(double x, double y, double x2, double y2, double Xk1, double Xk2) {
+                    double R1 = Math.sqrt(Math.pow((obs.getX()-xk),2) + Math.pow(obs.getY()-yk,2));
+                    double R2 = Math.sqrt(Math.pow((obs.getX()-xk_b),2) + Math.pow(obs.getY()-yk_b,2));
+
+                    double dfdx = (-xk+obs.getX())/R1 - (-xk_b+obs.getX())/R2;
+                    double dfdy = (-yk+obs.getY())/R1 - (-yk_b+obs.getY())/R2;
+
+                    double[][] jacobianData = {{0, 0, dfdx, dfdy}};
+                    H = new Array2DRowRealMatrix(jacobianData);
+
+
+                    // Swapped the meaning of Obs::X/Y - now means the true loc of the transmitter.
+                    //     xk/yk,xk_b/yk_b are now the estimated locations of targets (i.e. own position)
+                    f_est = Math.sqrt(Math.pow((xk - obs.getX()), 2) + Math.pow(yk - obs.getY(), 2)) - Math.sqrt(Math.pow((xk_b - obs.getX()), 2) + Math.pow(yk_b - obs.getY(), 2));
 
                     d = obs.getMeas() * Helpers.SPEED_OF_LIGHT;
 
@@ -226,7 +371,13 @@ public class ComputeProcessor implements Runnable {
                 }
                 else if (obs.getObservationType().equals(ObservationType.aoa)) {
 
-                    H = recalculateH_AOA(obs.getX(), obs.getY(), xk, yk);
+                    //H = recalculateH_AOA(obs.getX(), obs.getY(), xk, yk);
+                    // ref method: public RealMatrix recalculateH_AOA(double x, double y, double Xk1, double Xk2)
+                    double R1 = Math.sqrt(Math.pow((obs.getX()-xk),2) + Math.pow((obs.getY()-yk),2)); // Note: better performance using sqrt
+                    double dfdx = (obs.getY()-yk)/R1;  // Note d/d"x" = "y - y_est"/..... on purpose linearisation
+                    double dfdy = -(obs.getX()-xk)/R1;
+                    double[][] jacobianData = {{0, 0, dfdx, dfdy}};
+                    H = new Array2DRowRealMatrix(jacobianData);
 
                     f_est = Math.atan((obs.getY() - yk)/(obs.getX() - xk))*180/Math.PI;
 
@@ -367,7 +518,7 @@ public class ComputeProcessor implements Runnable {
                             else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
                                 f_est_adj = f_est_adj * Math.PI / 360;
                             }
-                            log.debug("Observation utilisation: assets:"+obs_state.getObs().getAssetId()+"/"+obs_state.getObs().getAssetId_b()+", type: "+obs_state.getObs().getObservationType().name()+", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas()+", innov: "+obs_state.getInnov());
+                            log.debug("Observation utilisation: assets:"+obs_state.getObs().getAssetId()+", type: "+obs_state.getObs().getObservationType().name()+", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas()+", innov: "+obs_state.getInnov());
                         }
                     }
 
@@ -463,14 +614,18 @@ public class ComputeProcessor implements Runnable {
 
     public void dispatchResult(RealVector Xk) {
 
+        log.debug("State: "+Xk.getEntry(0)+","+Xk.getEntry(1));
+
         double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(0),Xk.getEntry(1), this.geoMission.getLatZone(), this.geoMission.getLonZone());
         this.geoMission.getTarget().setCurrent_loc(latLon);
 
         /* Compute probability ELP */
         double[][] covMatrix=new double[][]{{Pk.getEntry(0,0),Pk.getEntry(0,1)},{Pk.getEntry(1,0),Pk.getEntry(1,1)}};
+        log.debug("Pk: "+Pk);
         double[] evalues = Helpers.getEigenvalues(covMatrix);
         double largestEvalue = Math.max(evalues[0],evalues[1]);
         double smallestEvalue = Math.min(evalues[0],evalues[1]);
+        log.debug("Large e-value: "+largestEvalue+", Smallest e-value: "+smallestEvalue);
         double[] evector = Helpers.getEigenvector(covMatrix, largestEvalue);
         double rot = Math.atan(evector[1] / evector[0]);
         double major = 2*Math.sqrt(9.210*largestEvalue); // 5.991 equiv 95% C.I, 4.605 equiv 90% C.I, 9.210 equiv 99% C.I
@@ -479,6 +634,7 @@ public class ComputeProcessor implements Runnable {
         this.geoMission.getTarget().setElp_minor(minor);
         this.geoMission.getTarget().setElp_rot(rot);
 
+        log.debug("Init just pushing first target location output only (initially)");
         this.efusionListener.result(geoMission.getGeoId(),latLon[0],latLon[1], major, minor, rot);
 
         if (this.geoMission.getOutputFilterState() && kmlFileHelpers !=null) {
