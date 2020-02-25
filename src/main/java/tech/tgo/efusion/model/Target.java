@@ -19,6 +19,8 @@ public class Target {
         this.name = name;
     }
 
+    public Target() {}
+
     public String getId() {
         return id;
     }

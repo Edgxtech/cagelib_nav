@@ -136,10 +136,12 @@ public class AllObservationFixITs implements EfusionListener {
         simulatedTargetObserver.setRange_rand_factor(200);
         simulatedTargetObserver.setLat_move(0.0); // STATIC
         simulatedTargetObserver.setLon_move(0.0);
-        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
+        Map<String, TestAsset> assets = new HashMap<String, TestAsset>() /// NOTE: in the nav use case the meaning of this is TestTargets
         {{
             put(asset_a.getId(), asset_a);
             put(asset_b.getId(), asset_b);
+            asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B"}));
+            asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{}));
             //put(asset_c.getId(), asset_c);
             //put(asset_d.getId(), asset_d);
         }};

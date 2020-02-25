@@ -22,6 +22,9 @@ public class SimulatedTargetObserver extends TimerTask {
 
     Map<String,TestAsset> testAssets = new HashMap<String,TestAsset>();
 
+    // TODO, now also need to hold a map of testTargets ???
+    Map<String,TestTarget> testTargets = new HashMap<String,TestTarget>();
+
     double range_rand_factor; // = 0; /* Guide: 50 [m] */
     double tdoa_rand_factor; // = 0.0000001; /* Guide: 0.0000001 [sec] */
     double aoa_rand_factor; // = 0; /* Guide: 0.1 [radians] */
@@ -34,6 +37,11 @@ public class SimulatedTargetObserver extends TimerTask {
 
     @Override
     public void run() {
+
+        // TODO, Observation needs to be switched around: from Target to Asset - and matched as so in processor?
+        //        This may help to draw TDOA measurement lines??
+        //
+        // 1. FOR EACH testTarget, go through all assets and see which ones to generate a measurement to (NOT FROM!)
 
         // Generate lat,lon path of movement according to simple movement model
         true_lat = true_lat + lat_move;
@@ -77,8 +85,6 @@ public class SimulatedTargetObserver extends TimerTask {
 
                     // TODO, this needs to be rewired such that it should from test target_a to test target_b.
 
-                    //UP TO HERE, for some reason getting 4 unique targets, should only be two
-
                     for (String secondary_asset_id : asset.getTdoa_asset_ids()) {
                         Long obsId = assetToObservationIdMapping.get(asset.getId()+":"+secondary_asset_id+"_"+ObservationType.tdoa.name());
                         if (obsId==null)
@@ -92,14 +98,16 @@ public class SimulatedTargetObserver extends TimerTask {
                         double b_y = utm_coords[0];
                         double b_x = utm_coords[1];
 
+                        // TODO, change the concept of what is used to get the TDOA measure; should be from tgt1_X/Ytrue, tgt2_X/Ytrue, and known asset location
+                        //      this will then have an outer, list of targets iteration, and inner observed assets iteration?
                         double meas_tdoa = ObservationTestHelpers.getTdoaMeasurement(a_y, a_x, b_y, b_x, true_y, true_x, tdoa_rand_factor);
                         log.debug("Asset: "+asset.getId()+", 2nd Asset: "+secondary_asset_id+", Meas tdoa: "+meas_tdoa);
 
                         Observation obs_c = new Observation(obsId, asset.getId(), asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
                         //obs_c.setAssetId_b(testAssets.get(secondary_asset_id).getId());  /// Replaced with below for Nav use case
                         obs_c.setTargetId_b(testAssets.get(secondary_asset_id).getId());
-//                        obs_c.setLat_b(asset1.getCurrent_loc()[0]);  // IRRELEVANT in nav use case
-//                        obs_c.setLon_b(asset1.getCurrent_loc()[1]);
+                        obs_c.setLat_b(asset1.getCurrent_loc()[0]);
+                        obs_c.setLon_b(asset1.getCurrent_loc()[1]);
                         obs_c.setMeas(meas_tdoa); // tdoa in seconds
                         obs_c.setObservationType(ObservationType.tdoa);
                         efusionProcessManager.addObservation(obs_c);

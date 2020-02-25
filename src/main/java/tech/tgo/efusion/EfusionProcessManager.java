@@ -7,6 +7,7 @@ import tech.tgo.efusion.model.*;
 import tech.tgo.efusion.util.ConfigurationException;
 import tech.tgo.efusion.util.EfusionValidator;
 import tech.tgo.efusion.util.Helpers;
+import tech.tgo.efusion.util.MyMaths;
 import uk.me.jstott.jcoord.LatLng;
 import uk.me.jstott.jcoord.UTMRef;
 import java.io.*;
@@ -123,10 +124,37 @@ public class EfusionProcessManager implements Serializable {
 
             /* TDOA MEASUREMENT */
             if (obs.getObservationType().equals(ObservationType.tdoa)) {
-                log.debug("Temporary disabled tdoa observation drawing");
-//                List<double[]> measurementHyperbola = new ArrayList<double[]>();
-//                double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2;
-//                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2; double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2)));
+                log.debug("Defining obs hyperbola geometry");
+                List<double[]> measurementHyperbola = new ArrayList<double[]>();
+
+                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2;
+                log.debug("a: "+a+", Transmitter X: "+obs.getX());
+                double tf = MyMaths.Arccosh(obs.getX() / Math.abs(a));
+                log.debug("tf: "+tf);
+                double b = obs.getY() / (Math.sinh(tf));
+                double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2));
+
+                log.debug("b: "+b);
+                log.debug("Cosh tf*a: "+Math.cosh(tf)*Math.abs(a));
+
+                //double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2; // focus length from origin, +-c respectively
+                //double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2))); // c = sqrt(a^2+b^2)
+                //double ca = (obs.getXb()-obs.getX())/(2*c); double sa = (obs.getYb()-obs.getY())/(2*c); //# COS and SIN of rot angle
+                for (double t = -2; t<= 2; t += 0.1) {
+                    double X = Math.abs(a)*Math.cosh(t); double Y = b*Math.sinh(t); //# Hyperbola branch
+                    log.debug("X/Y: "+X+","+Y);
+                    //double x = (obs.getX()+obs.getXb())/2 + X*ca - Y*sa; //# Rotated and translated
+                    //double y = (obs.getY()+obs.getYb())/2 + X*sa + Y*ca;
+                    UTMRef utmMeas = new UTMRef(X, Y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
+                    LatLng ltln = utmMeas.toLatLng();
+                    measurementHyperbola.add(new double[]{ltln.getLat(),ltln.getLng()});
+                }
+                this.geoMission.hyperbolasToShow.add(obs.getId());
+                obs.setHyperbolaGeometry(measurementHyperbola);
+
+                // Original preserved
+//                double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2; // focus length from origin, +-c respectively
+//                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2; double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2))); // c = sqrt(a^2+b^2)
 //                double ca = (obs.getXb()-obs.getX())/(2*c); double sa = (obs.getYb()-obs.getY())/(2*c); //# COS and SIN of rot angle
 //                for (double t = -2; t<= 2; t += 0.1) {
 //                    double X = a*Math.cosh(t); double Y = b*Math.sinh(t); //# Hyperbola branch
@@ -211,8 +239,8 @@ public class EfusionProcessManager implements Serializable {
 
         EfusionValidator.validate(geoMission);
 
-        /* Uses defaults - overridden by some implementations (required for pur tdoa processing) */
-        geoMission.setFilterProcessNoise(new double[][]{{0.01, 0, 0, 0}, {0, 0.01 ,0, 0}, {0, 0, 0.01, 0}, {0, 0, 0 ,0.01}});
+//        /* Uses defaults - overridden by some implementations (required for pur tdoa processing) */
+//        geoMission.setFilterProcessNoise(new double[][]{{0.01, 0, 0, 0}, {0, 0.01 ,0, 0}, {0, 0, 0.01, 0}, {0, 0, 0 ,0.01}});    -- MOVED IN NAV USE CASE TO SPT DYNAMIC STATE SIZES, MOVED TO setObservations in computeProcessor
 
         Properties properties = new Properties();
         String appConfigPath = Thread.currentThread().getContextClassLoader().getResource("").getPath() + "application.properties";
