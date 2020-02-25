@@ -76,6 +76,8 @@ public class ComputeProcessor implements Runnable {
     int matrice_size;
     int number_unique_targets;
 
+    Set<String> uniqueTargets;
+
     /*
      * Create processor for the given config, observations and client implemented listener
      */
@@ -184,7 +186,7 @@ public class ComputeProcessor implements Runnable {
 
 
         // Determine targets requiring estimation - extract from set of observations
-        Set<String> uniqueTargets = new HashSet<String>();
+        uniqueTargets = new HashSet<String>();
         for (Observation obs : this.observations.values()) {
 
             //1. determine all unique targets, then set the size of relevant matrices
@@ -653,10 +655,14 @@ public class ComputeProcessor implements Runnable {
         log.debug("State: "+Xk.getEntry(0)+","+Xk.getEntry(1));
 
         Object[][] results = new Object[][]{{}};
-        for (int i=0; i<number_unique_targets; i++) {
+        for (String target_id : uniqueTargets) {
 
-            double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(0), Xk.getEntry(1), this.geoMission.getLatZone(), this.geoMission.getLonZone());
-            this.geoMission.getTarget().setCurrent_loc(latLon);
+            // Get StateIndexes for each target
+            Integer[] indexes = stateIndexMap.get(target_id);
+
+            double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(indexes[0]), Xk.getEntry(indexes[1]), this.geoMission.getLatZone(), this.geoMission.getLonZone());
+
+            this.geoMission.getTargets().get(target_id).setCurrent_loc(latLon);
 
             /* Compute probability ELP */
             double[][] covMatrix = new double[][]{{Pk.getEntry(0, 0), Pk.getEntry(0, 1)}, {Pk.getEntry(1, 0), Pk.getEntry(1, 1)}};
@@ -669,9 +675,9 @@ public class ComputeProcessor implements Runnable {
             double rot = Math.atan(evector[1] / evector[0]);
             double major = 2 * Math.sqrt(9.210 * largestEvalue); // 5.991 equiv 95% C.I, 4.605 equiv 90% C.I, 9.210 equiv 99% C.I
             double minor = 2 * Math.sqrt(9.210 * smallestEvalue);
-            this.geoMission.getTarget().setElp_major(major);
-            this.geoMission.getTarget().setElp_minor(minor);
-            this.geoMission.getTarget().setElp_rot(rot);
+            this.geoMission.getTargets().get(target_id).setElp_major(major);
+            this.geoMission.getTargets().get(target_id).setElp_minor(minor);
+            this.geoMission.getTargets().get(target_id).setElp_rot(rot);
 
             results[i] = {""};
         }

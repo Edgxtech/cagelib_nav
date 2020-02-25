@@ -12,6 +12,7 @@ import tech.tgo.efusion.model.Target;
 import tech.tgo.efusion.util.ConfigurationException;
 import tech.tgo.efusion.util.SimulatedTargetObserver;
 import tech.tgo.efusion.util.TestAsset;
+import tech.tgo.efusion.util.TestTarget;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,6 +43,9 @@ public class AllObservationFixITs implements EfusionListener {
     TestAsset asset_c = new TestAsset();
     TestAsset asset_d = new TestAsset();
 
+    TestTarget target_a = new TestTarget();
+    TestTarget target_b = new TestTarget();
+
     GeoMission geoMission;
 
     @Before
@@ -52,7 +56,10 @@ public class AllObservationFixITs implements EfusionListener {
         /* Configure the intended mission */
         geoMission = new GeoMission();
         geoMission.setMissionMode(MissionMode.fix);
-        geoMission.setTarget(new Target("MY_TGT_ID","MY_TGT_NAME"));
+        String tgt_id_a = "MY_TGT_ID";
+        Map<String,Target> targets = new HashMap<String,Target>();
+        targets.put(tgt_id_a,new Target(tgt_id_a,"MY_TGT_NAME"));
+        //geoMission.setTarget(new Target("MY_TGT_ID","MY_TGT_NAME")); // REMOVED IN NAV
         geoMission.setGeoId("MY_GEO_ID");
         geoMission.setShowMeas(true);
         geoMission.setShowCEPs(true);
@@ -116,9 +123,21 @@ public class AllObservationFixITs implements EfusionListener {
         asset_d.setProvide_aoa(true);
         asset_d.setCurrent_loc(asset_d_coords);
 
-        asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B","C","D"}));
-        asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{"C","D"}));
-        asset_c.setTdoa_asset_ids(Arrays.asList(new String[]{"D"}));
+//        asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B","C","D"})); // NOT RELEVANT FOR NAV
+//        asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{"C","D"}));
+//        asset_c.setTdoa_asset_ids(Arrays.asList(new String[]{"D"}));
+
+        target_a.setId("A");
+        target_a.setTrue_lat(-31.98); // BOTTOM
+        target_a.setTrue_lon(116.000);
+        target_a.setLat_move(0.0); // STATIC
+        target_a.setLon_move(0.0);
+
+        target_b.setId("B");
+        target_b.setTrue_lat(-31.88);
+        target_b.setTrue_lon(115.990);
+        target_b.setLat_move(0.0); // STATIC
+        target_b.setLon_move(0.0);
     }
 
     /* Result callback */
@@ -129,19 +148,31 @@ public class AllObservationFixITs implements EfusionListener {
 
     @Test
     public void testBottom() {
-        simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM
-        simulatedTargetObserver.setTrue_lon(116.000);
+        // TODO
+        // 1. Add testTargets, with associated TDOA_asset_ids
+        Map<String, TestTarget> targets = new HashMap<String, TestTarget>() /// NOTE: in the nav use case the meaning of this is TestTargets
+        {{
+            put(target_a.getId(), target_a);
+            put(target_b.getId(), target_b);
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{"B"})); /// IRELEVANT IN NAV, NOW SHARED BTWN TARGETS (i.e. my platforms)
+            target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
+            //put(asset_c.getId(), asset_c);
+            //put(asset_d.getId(), asset_d);
+        }};
+
+//        simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM   /// REMOVED IN NAV, moved into each testTarget
+//        simulatedTargetObserver.setTrue_lon(116.000);
         simulatedTargetObserver.setAoa_rand_factor(0.0);
         simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
         simulatedTargetObserver.setRange_rand_factor(200);
-        simulatedTargetObserver.setLat_move(0.0); // STATIC
-        simulatedTargetObserver.setLon_move(0.0);
+//        simulatedTargetObserver.setLat_move(0.0); // STATIC  /// REMOVED IN NAV, moved into each testTarget
+//        simulatedTargetObserver.setLon_move(0.0);
         Map<String, TestAsset> assets = new HashMap<String, TestAsset>() /// NOTE: in the nav use case the meaning of this is TestTargets
         {{
-            put(asset_a.getId(), asset_a);
+            put(asset_a.getId(), asset_a);   /// THE NUMBER OF ASSETS ARE THE NUMBER OF STATIC TX's that are measured.
             put(asset_b.getId(), asset_b);
-            asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B"}));
-            asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{}));
+//            asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B"})); /// IRELEVANT IN NAV, NOW SHARED BTWN TARGETS (i.e. my platforms)
+//            asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{}));
             //put(asset_c.getId(), asset_c);
             //put(asset_d.getId(), asset_d);
         }};
@@ -157,147 +188,147 @@ public class AllObservationFixITs implements EfusionListener {
         }
     }
 
-    @Test
-    public void testBottom_TwoAssets() {
-        simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM
-        simulatedTargetObserver.setTrue_lon(116.000);
-        simulatedTargetObserver.setAoa_rand_factor(0.0);
-        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
-        simulatedTargetObserver.setRange_rand_factor(200);
-        simulatedTargetObserver.setLat_move(0.0); // STATIC
-        simulatedTargetObserver.setLon_move(0.0);
-
-        geoMission.setFilterConvergenceResidualThreshold(0.01);
-
-        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
-        {{
-            put(asset_a.getId(), asset_a);
-            put(asset_b.getId(), asset_b);
-            asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B"}));
-            asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{}));
-        }};
-        simulatedTargetObserver.setTestAssets(assets);
-        simulatedTargetObserver.run();
-
-        try {
-            Thread thread = efusionProcessManager.start();
-            thread.join();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testLeft() {
-        simulatedTargetObserver.setTrue_lat(-31.98); // LEFT
-        simulatedTargetObserver.setTrue_lon(115.80);
-        simulatedTargetObserver.setAoa_rand_factor(0.1);
-        simulatedTargetObserver.setRange_rand_factor(50);
-        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
-        simulatedTargetObserver.setLat_move(0.0); // STATIC
-        simulatedTargetObserver.setLon_move(0.0);
-
-        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
-        {{
-            put(asset_a.getId(), asset_a);
-            put(asset_b.getId(), asset_b);
-            put(asset_c.getId(), asset_c);
-            put(asset_d.getId(), asset_d);
-        }};
-        simulatedTargetObserver.setTestAssets(assets);
-        simulatedTargetObserver.run();
-
-        try {
-            Thread thread = efusionProcessManager.start();
-            thread.join();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testTopRight() {
-        simulatedTargetObserver.setTrue_lat(-31.7); // TOPRIGHT
-        simulatedTargetObserver.setTrue_lon(116.08);
-        simulatedTargetObserver.setAoa_rand_factor(0.1);
-        simulatedTargetObserver.setRange_rand_factor(50);
-        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
-        simulatedTargetObserver.setLat_move(0.0); // STATIC
-        simulatedTargetObserver.setLon_move(0.0);
-        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
-        {{
-            put(asset_a.getId(), asset_a);
-            put(asset_b.getId(), asset_b);
-            put(asset_c.getId(), asset_c);
-            put(asset_d.getId(), asset_d);
-        }};
-        simulatedTargetObserver.setTestAssets(assets);
-        simulatedTargetObserver.run();
-
-        try {
-            Thread thread = efusionProcessManager.start();
-            thread.join();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testTop() {
-        simulatedTargetObserver.setTrue_lat(-31.7); // TOP
-        simulatedTargetObserver.setTrue_lon(115.80);
-        simulatedTargetObserver.setAoa_rand_factor(0.1);
-        simulatedTargetObserver.setRange_rand_factor(50);
-        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
-        simulatedTargetObserver.setLat_move(0.0); // STATIC
-        simulatedTargetObserver.setLon_move(0.0);
-        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
-        {{
-            put(asset_a.getId(), asset_a);
-            put(asset_b.getId(), asset_b);
-            put(asset_c.getId(), asset_c);
-            put(asset_d.getId(), asset_d);
-        }};
-        simulatedTargetObserver.setTestAssets(assets);
-        simulatedTargetObserver.run();
-
-        try {
-            Thread thread = efusionProcessManager.start();
-            thread.join();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testRight() {
-        simulatedTargetObserver.setTrue_lat(-31.895); // RIGHT
-        simulatedTargetObserver.setTrue_lon(116.124);
-        simulatedTargetObserver.setAoa_rand_factor(0.1);
-        simulatedTargetObserver.setRange_rand_factor(50);
-        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
-        simulatedTargetObserver.setLat_move(0.0); // STATIC
-        simulatedTargetObserver.setLon_move(0.0);
-        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
-        {{
-            put(asset_a.getId(), asset_a);
-            put(asset_b.getId(), asset_b);
-            put(asset_c.getId(), asset_c);
-            put(asset_d.getId(), asset_d);
-        }};
-        simulatedTargetObserver.setTestAssets(assets);
-        simulatedTargetObserver.run();
-
-        try {
-            Thread thread = efusionProcessManager.start();
-            thread.join();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    @Test
+//    public void testBottom_TwoAssets() {
+//        simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM
+//        simulatedTargetObserver.setTrue_lon(116.000);
+//        simulatedTargetObserver.setAoa_rand_factor(0.0);
+//        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
+//        simulatedTargetObserver.setRange_rand_factor(200);
+//        simulatedTargetObserver.setLat_move(0.0); // STATIC
+//        simulatedTargetObserver.setLon_move(0.0);
+//
+//        geoMission.setFilterConvergenceResidualThreshold(0.01);
+//
+//        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
+//        {{
+//            put(asset_a.getId(), asset_a);
+//            put(asset_b.getId(), asset_b);
+//            asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B"}));
+//            asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{}));
+//        }};
+//        simulatedTargetObserver.setTestAssets(assets);
+//        simulatedTargetObserver.run();
+//
+//        try {
+//            Thread thread = efusionProcessManager.start();
+//            thread.join();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    @Test
+//    public void testLeft() {
+//        simulatedTargetObserver.setTrue_lat(-31.98); // LEFT
+//        simulatedTargetObserver.setTrue_lon(115.80);
+//        simulatedTargetObserver.setAoa_rand_factor(0.1);
+//        simulatedTargetObserver.setRange_rand_factor(50);
+//        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
+//        simulatedTargetObserver.setLat_move(0.0); // STATIC
+//        simulatedTargetObserver.setLon_move(0.0);
+//
+//        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
+//        {{
+//            put(asset_a.getId(), asset_a);
+//            put(asset_b.getId(), asset_b);
+//            put(asset_c.getId(), asset_c);
+//            put(asset_d.getId(), asset_d);
+//        }};
+//        simulatedTargetObserver.setTestAssets(assets);
+//        simulatedTargetObserver.run();
+//
+//        try {
+//            Thread thread = efusionProcessManager.start();
+//            thread.join();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    @Test
+//    public void testTopRight() {
+//        simulatedTargetObserver.setTrue_lat(-31.7); // TOPRIGHT
+//        simulatedTargetObserver.setTrue_lon(116.08);
+//        simulatedTargetObserver.setAoa_rand_factor(0.1);
+//        simulatedTargetObserver.setRange_rand_factor(50);
+//        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
+//        simulatedTargetObserver.setLat_move(0.0); // STATIC
+//        simulatedTargetObserver.setLon_move(0.0);
+//        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
+//        {{
+//            put(asset_a.getId(), asset_a);
+//            put(asset_b.getId(), asset_b);
+//            put(asset_c.getId(), asset_c);
+//            put(asset_d.getId(), asset_d);
+//        }};
+//        simulatedTargetObserver.setTestAssets(assets);
+//        simulatedTargetObserver.run();
+//
+//        try {
+//            Thread thread = efusionProcessManager.start();
+//            thread.join();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    @Test
+//    public void testTop() {
+//        simulatedTargetObserver.setTrue_lat(-31.7); // TOP
+//        simulatedTargetObserver.setTrue_lon(115.80);
+//        simulatedTargetObserver.setAoa_rand_factor(0.1);
+//        simulatedTargetObserver.setRange_rand_factor(50);
+//        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
+//        simulatedTargetObserver.setLat_move(0.0); // STATIC
+//        simulatedTargetObserver.setLon_move(0.0);
+//        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
+//        {{
+//            put(asset_a.getId(), asset_a);
+//            put(asset_b.getId(), asset_b);
+//            put(asset_c.getId(), asset_c);
+//            put(asset_d.getId(), asset_d);
+//        }};
+//        simulatedTargetObserver.setTestAssets(assets);
+//        simulatedTargetObserver.run();
+//
+//        try {
+//            Thread thread = efusionProcessManager.start();
+//            thread.join();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    @Test
+//    public void testRight() {
+//        simulatedTargetObserver.setTrue_lat(-31.895); // RIGHT
+//        simulatedTargetObserver.setTrue_lon(116.124);
+//        simulatedTargetObserver.setAoa_rand_factor(0.1);
+//        simulatedTargetObserver.setRange_rand_factor(50);
+//        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
+//        simulatedTargetObserver.setLat_move(0.0); // STATIC
+//        simulatedTargetObserver.setLon_move(0.0);
+//        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
+//        {{
+//            put(asset_a.getId(), asset_a);
+//            put(asset_b.getId(), asset_b);
+//            put(asset_c.getId(), asset_c);
+//            put(asset_d.getId(), asset_d);
+//        }};
+//        simulatedTargetObserver.setTestAssets(assets);
+//        simulatedTargetObserver.run();
+//
+//        try {
+//            Thread thread = efusionProcessManager.start();
+//            thread.join();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 }

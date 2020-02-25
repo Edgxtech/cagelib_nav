@@ -12,7 +12,8 @@ public class GeoMission {
     MissionMode missionMode;
 
     /* required - name and id */
-    Target target;
+    //Target target;  // REPLACE IN NAV
+    Map<String,Target> targets;
 
     /* required */
     String geoId;
@@ -86,12 +87,21 @@ public class GeoMission {
         this.missionMode = missionMode;
     }
 
-    public Target getTarget() {
-        return target;
+//    public Target getTarget() {
+//        return target;
+//    }
+//
+//    public void setTarget(Target target) {
+//        this.target = target;
+//    }
+
+
+    public Map<String, Target> getTargets() {
+        return targets;
     }
 
-    public void setTarget(Target target) {
-        this.target = target;
+    public void setTargets(Map<String, Target> targets) {
+        this.targets = targets;
     }
 
     public String getGeoId() {
