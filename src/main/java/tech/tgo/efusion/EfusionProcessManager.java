@@ -96,6 +96,11 @@ public class EfusionProcessManager implements Serializable {
         Asset asset = new Asset(obs.getAssetId(),new double[]{obs.getLat(),obs.getLon()});
         this.geoMission.getAssets().put(obs.getAssetId(),asset);
 
+
+        // TODO, Or perhaps here put merge targets?
+
+
+
         /* There is a second asset to register its location */
         if (obs.getObservationType().equals(ObservationType.tdoa)) {
 //            double[] utm_coords_b = Helpers.convertLatLngToUtmNthingEasting(obs.getLat_b(), obs.getLon_b());
@@ -106,6 +111,8 @@ public class EfusionProcessManager implements Serializable {
 //            this.geoMission.getAssets().put(obs.getAssetId_b(),asset_b);
 
             // TODO, this is now performed via target state estimate
+
+            //this.geoMission.getTargets().put(obs.getTargetId_b(),)
         }
 
         if (this.geoMission.getShowMeas()) {

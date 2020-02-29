@@ -76,7 +76,8 @@ public class ComputeProcessor implements Runnable {
     int matrice_size;
     int number_unique_targets;
 
-    Set<String> uniqueTargets;
+    Set<String> uniqueObservedTargets;
+    Map<String,Target> activeTargets = new HashMap<String,Target>();
 
     /*
      * Create processor for the given config, observations and client implemented listener
@@ -185,23 +186,58 @@ public class ComputeProcessor implements Runnable {
         //double[] initStateData = {start_x_y[0], start_x_y[1], 1, 1};
 
 
+        // This needs to include targets even though no observations may be present?
         // Determine targets requiring estimation - extract from set of observations
-        uniqueTargets = new HashSet<String>();
+        uniqueObservedTargets = new HashSet<String>();
+
+
+        log.debug("# active observations: "+this.observations.size());
         for (Observation obs : this.observations.values()) {
 
             //1. determine all unique targets, then set the size of relevant matrices
             //2. index the state indexes in the stateIndexMap
-            uniqueTargets.add(obs.getTargetId());
+            uniqueObservedTargets.add(obs.getTargetId());
+            activeTargets.put(obs.getTargetId(), new Target(obs.getTargetId(), "ARB-NAME"));
+            log.debug("Processing observation: "+obs.toString());
             if (obs.getTargetId_b()!=null) {
-                uniqueTargets.add(obs.getTargetId_b());
+                uniqueObservedTargets.add(obs.getTargetId_b());
+                activeTargets.put(obs.getTargetId_b(), new Target(obs.getTargetId_b(),"ARB-NAME"));
+                log.debug("Adding (secondary) target to target set: "+obs.getTargetId_b());
+            }
+            log.debug("Adding target to target set: "+obs.getTargetId());
+        }
+
+        //TODO, need to merge/remove targets, maintain an original set in geoMission.setTargets() which has lat/lon estimates updated to
+        // TODO, here need to dynamically create the targets array
+
+        if (this.geoMission.getTargets()==null || this.geoMission.getTargets().isEmpty()) {
+            log.debug("No target list set, initialising with # active targets: "+activeTargets.size());
+            this.geoMission.setTargets(activeTargets);
+        }
+        else {
+            log.debug("Merging with # existing targets: " + this.geoMission.getTargets().size());
+
+            for (Target target : this.geoMission.getTargets().values()) {
+
+                if (uniqueObservedTargets.contains(target.getId())) {
+                    // retain existing geoMissionTarget
+                    uniqueObservedTargets.remove(target.getId());
+                }
             }
 
+            // for each remaining unique observed target, add it
+            for (String uniqueObservedTargetId : uniqueObservedTargets) {
+                this.geoMission.getTargets().put(uniqueObservedTargetId, new Target(uniqueObservedTargetId, "ARB-NEW-TGT-NAME"));
+            }
+            // Now
+            log.debug("Merged target list with missing targets, size now: "+this.geoMission.getTargets().size());
         }
+
 
         // For each unique target, pad out the matrices
         // 1. For 1 target, Thi=4x4, 2, 8x8 ... etc...
-        log.debug("Unique targets: "+uniqueTargets.size());
-        number_unique_targets = uniqueTargets.size();
+        log.debug("Unique targets: "+uniqueObservedTargets.size());
+        number_unique_targets = uniqueObservedTargets.size();
         matrice_size = number_unique_targets*4;
 
         // initialise Xinit [for reuse to re-initialise Xk]
@@ -211,7 +247,7 @@ public class ComputeProcessor implements Runnable {
         //initialise Thi
         Thi = new Array2DRowRealMatrix(matrice_size, matrice_size);
         int i=0;
-        for (String uniqueTarget : uniqueTargets) {//(int i=0; i<uniqueTargets.size(); i=i+2) {
+        for (String uniqueTarget : uniqueObservedTargets) {//(int i=0; i<uniqueTargets.size(); i=i+2) {
             // Create like this: 1 0 0 0 1 0 0 0; 0 1 0 0 0 1 0 0 ...
             Thi.setEntry(i,i,1);                             // x
             Thi.setEntry(i,i+(matrice_size/2),1);        // delta_x
@@ -522,65 +558,79 @@ public class ComputeProcessor implements Runnable {
             /* Export Result */
             if ((Calendar.getInstance().getTimeInMillis() - startTime) > this.geoMission.getDispatchResultsPeriod()) {
 
-                /* A measure of consistency between types of observations */
-                double residual_rk = 0.0;
-                for (FilterObservationDTO obs_state: filterObservationDTOs) {
-                    if (obs_state.getObs().getObservationType().equals(ObservationType.range)) {
-                        residual_rk += (double) Math.abs(obs_state.getF_est() - obs_state.getObs().getMeas()) / 1000;
-                    }
-                    else if (obs_state.getObs().getObservationType().equals(ObservationType.tdoa)) {
-                        residual_rk += (double) Math.abs(obs_state.getF_est() - obs_state.getObs().getMeas()) / 1000;
-                    }
-                    else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
-                        residual_rk += (double) Math.abs(obs_state.getF_est() - obs_state.getObs().getMeas()) / 360;
+                /* Check convergence of all targets */
+                boolean allTargetsConverged = true;
+                for (Target target : this.geoMission.getTargets().values()) {
+                    log.debug("Checking if to dispatch result for target: "+target.getId());
+
+//                    /* A measure of consistency between types of observations */  // DEPRECATED FOR NOW
+//                    double residual_rk = 0.0;
+//                    for (FilterObservationDTO obs_state : filterObservationDTOs) {
+//                        if (obs_state.getObs().getObservationType().equals(ObservationType.range)) {
+//                            residual_rk += (double) Math.abs(obs_state.getF_est() - obs_state.getObs().getMeas()) / 1000;
+//                        } else if (obs_state.getObs().getObservationType().equals(ObservationType.tdoa)) {
+//                            residual_rk += (double) Math.abs(obs_state.getF_est() - obs_state.getObs().getMeas()) / 1000;
+//                        } else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
+//                            residual_rk += (double) Math.abs(obs_state.getF_est() - obs_state.getObs().getMeas()) / 360;
+//                        }
+//                    }
+//                    residual_rk = residual_rk / this.observations.size();
+
+                    Integer[] stateIndexes = stateIndexMap.get(target.getId());
+
+                    /* A measure of residual changes the filter intends to make - using delta_x/y innovation data */
+                    double residual = Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size/2)) + Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size/2))));
+
+                    if (residual < this.geoMission.getFilterDispatchResidualThreshold()) {
+                        log.debug("Dispatching Result From # Observations: " + this.observations.size());
+                        log.debug("Residual Movements: " + residual);
+//                        log.debug("Residual Measurement Delta: " + residual_rk);  /// DEPRECATED FOR NOW
+                        log.debug("Residual Innovation: " + innov);
+                        log.debug("Covariance: " + Pk);
+
+                        if (log.isDebugEnabled()) {
+                            for (FilterObservationDTO obs_state : filterObservationDTOs) {
+                                double f_est_adj = obs_state.getF_est();
+                                if (obs_state.getObs().getObservationType().equals(ObservationType.tdoa)) {
+                                    f_est_adj = f_est_adj / Helpers.SPEED_OF_LIGHT;
+                                } else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
+                                    f_est_adj = f_est_adj * Math.PI / 360;
+                                }
+                                log.debug("Observation utilisation: assets:" + obs_state.getObs().getAssetId() + ", type: " + obs_state.getObs().getObservationType().name() + ", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas() + ", innov: " + obs_state.getInnov());
+                            }
+                        }
+
+                        startTime = Calendar.getInstance().getTimeInMillis();
+
+                        dispatchResult(Xk);
+
+                        // TODO, if all targets are below threshold then break
+
+                        if (geoMission.getMissionMode().equals(MissionMode.fix)) {
+                            if (residual < this.geoMission.getFilterConvergenceResidualThreshold()) {
+//                                log.debug("Exiting since this is a FIX Mode run and filter has converged to threshold");
+//                                running.set(false);
+//                                break;
+                                log.debug("Target:"+target.getId()+" converged");
+                            }
+                            else {
+                                allTargetsConverged = false;
+                            }
+                        } else {
+                            log.debug("This is a Tracking mode run, using latest observations (as held in staging) and continuing...");
+
+                            /* Resynch latest observations, and reinitialise with current state estimate */
+                            log.debug("# Staged observations: " + this.staged_observations.size());
+                            setObservations(this.staged_observations);
+                        }
+                    } else {
+                        log.trace("Residual not low enough to export result: " + residual);
                     }
                 }
-                residual_rk = residual_rk / this.observations.size();
-
-                /* A measure of residual changes the filter intends to make */
-                double residual = Math.abs(innov.getEntry(2)) + Math.abs(innov.getEntry(3));
-
-                if (residual < this.geoMission.getFilterDispatchResidualThreshold()) {
-                    log.debug("Dispatching Result From # Observations: " + this.observations.size());
-                    log.debug("Residual Movements: "+residual);
-                    log.debug("Residual Measurement Delta: "+residual_rk);
-                    log.debug("Residual Innovation: "+innov);
-                    log.debug("Covariance: "+Pk);
-
-                    if (log.isDebugEnabled()) {
-                        for (FilterObservationDTO obs_state : filterObservationDTOs) {
-                            double f_est_adj = obs_state.getF_est();
-                            if (obs_state.getObs().getObservationType().equals(ObservationType.tdoa)) {
-                                f_est_adj = f_est_adj / Helpers.SPEED_OF_LIGHT;
-                            }
-                            else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
-                                f_est_adj = f_est_adj * Math.PI / 360;
-                            }
-                            log.debug("Observation utilisation: assets:"+obs_state.getObs().getAssetId()+", type: "+obs_state.getObs().getObservationType().name()+", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas()+", innov: "+obs_state.getInnov());
-                        }
-                    }
-
-                    startTime = Calendar.getInstance().getTimeInMillis();
-
-                    dispatchResult(Xk);
-
-                    if (geoMission.getMissionMode().equals(MissionMode.fix)) {
-                        if (residual < this.geoMission.getFilterConvergenceResidualThreshold()) {
-                            log.debug("Exiting since this is a FIX Mode run and filter has converged to threshold");
-                            running.set(false);
-                            break;
-                        }
-                    }
-                    else {
-                        log.debug("This is a Tracking mode run, using latest observations (as held in staging) and continuing...");
-
-                        /* Resynch latest observations, and reinitialise with current state estimate */
-                        log.debug("# Staged observations: "+this.staged_observations.size());
-                        setObservations(this.staged_observations);
-                    }
-                }
-                else {
-                    log.trace("Residual not low enough to export result: "+residual);
+                if (allTargetsConverged) {
+                    log.debug("Exiting since this is a FIX Mode run and all targets in the filter have converged to threshold");
+                    running.set(false);
+                    break;
                 }
             }
         }
@@ -654,15 +704,17 @@ public class ComputeProcessor implements Runnable {
 
         log.debug("State: "+Xk.getEntry(0)+","+Xk.getEntry(1));
 
-        Object[][] results = new Object[][]{{}};
-        for (String target_id : uniqueTargets) {
+        //Object[][] results = new Object[][]{{}};
+        for (Target target : this.geoMission.getTargets().values()) {
+            log.debug("Dispatching result for target: "+target.getId());
 
             // Get StateIndexes for each target
-            Integer[] indexes = stateIndexMap.get(target_id);
+            Integer[] indexes = stateIndexMap.get(target.getId());
 
             double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(indexes[0]), Xk.getEntry(indexes[1]), this.geoMission.getLatZone(), this.geoMission.getLonZone());
 
-            this.geoMission.getTargets().get(target_id).setCurrent_loc(latLon);
+            log.debug("Geomission targets size: "+this.geoMission.getTargets().size());
+            this.geoMission.getTargets().get(target.getId()).setCurrent_loc(latLon);
 
             /* Compute probability ELP */
             double[][] covMatrix = new double[][]{{Pk.getEntry(0, 0), Pk.getEntry(0, 1)}, {Pk.getEntry(1, 0), Pk.getEntry(1, 1)}};
@@ -675,15 +727,17 @@ public class ComputeProcessor implements Runnable {
             double rot = Math.atan(evector[1] / evector[0]);
             double major = 2 * Math.sqrt(9.210 * largestEvalue); // 5.991 equiv 95% C.I, 4.605 equiv 90% C.I, 9.210 equiv 99% C.I
             double minor = 2 * Math.sqrt(9.210 * smallestEvalue);
-            this.geoMission.getTargets().get(target_id).setElp_major(major);
-            this.geoMission.getTargets().get(target_id).setElp_minor(minor);
-            this.geoMission.getTargets().get(target_id).setElp_rot(rot);
+            this.geoMission.getTargets().get(target.getId()).setElp_major(major);
+            this.geoMission.getTargets().get(target.getId()).setElp_minor(minor);
+            this.geoMission.getTargets().get(target.getId()).setElp_rot(rot);
 
-            results[i] = {""};
+            this.efusionListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot);
+//            results[i] = new Object[]{target_id,latLon[0],latLon[1], major, minor, rot};
+//            i++;
         }
 
         log.debug("Init just pushing first target location output only (initially)");
-        this.efusionListener.result(geoMission.getGeoId(),latLon[0],latLon[1], major, minor, rot);
+        //this.efusionListener.result(geoMission.getGeoId(), results);
 
         if (this.geoMission.getOutputFilterState() && kmlFileHelpers !=null) {
             kmlFileHelpers.writeCurrentExports(this.geoMission);

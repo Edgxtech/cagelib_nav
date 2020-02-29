@@ -67,6 +67,10 @@ public class Observation {
 
     Boolean crossed_border;
 
+    public String toString() {
+        return "ID: "+id+", type: "+observationType.name()+", assetId: "+assetId+", targetId: "+targetId+", targetIdB: "+targetId_b+", meas: "+meas;
+    }
+
     public Observation(Long id, String assetId, double lat, double lon) {
         this.id = id;
         this.assetId = assetId;

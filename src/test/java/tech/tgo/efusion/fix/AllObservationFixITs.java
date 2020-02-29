@@ -56,10 +56,30 @@ public class AllObservationFixITs implements EfusionListener {
         /* Configure the intended mission */
         geoMission = new GeoMission();
         geoMission.setMissionMode(MissionMode.fix);
-        String tgt_id_a = "MY_TGT_ID";
-        Map<String,Target> targets = new HashMap<String,Target>();
-        targets.put(tgt_id_a,new Target(tgt_id_a,"MY_TGT_NAME"));
-        //geoMission.setTarget(new Target("MY_TGT_ID","MY_TGT_NAME")); // REMOVED IN NAV
+
+        target_a.setId("A");
+        target_a.setName("Target A");
+        target_a.setTrue_lat(-31.98); // BOTTOM
+        target_a.setTrue_lon(116.000);
+        target_a.setLat_move(0.0); // STATIC
+        target_a.setLon_move(0.0);
+
+        target_b.setId("B");
+        target_b.setName("Target B");
+        target_b.setTrue_lat(-31.88); // TOP RIGHT
+        target_b.setTrue_lon(115.990);
+        target_b.setLat_move(0.0); // STATIC
+        target_b.setLon_move(0.0);
+
+        //String tgt_id_a = "MY_TGT_ID";
+        // TODO, shouldn't this be removed???? Since I need to dynamically build up targets based on observations
+//        Map<String,Target> targets = new HashMap<String,Target>();
+//        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
+//        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName()));
+//        //geoMission.setTarget(new Target("MY_TGT_ID","MY_TGT_NAME")); // REMOVED IN NAV
+//        geoMission.setTargets(targets);
+
+
         geoMission.setGeoId("MY_GEO_ID");
         geoMission.setShowMeas(true);
         geoMission.setShowCEPs(true);
@@ -127,23 +147,12 @@ public class AllObservationFixITs implements EfusionListener {
 //        asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{"C","D"}));
 //        asset_c.setTdoa_asset_ids(Arrays.asList(new String[]{"D"}));
 
-        target_a.setId("A");
-        target_a.setTrue_lat(-31.98); // BOTTOM
-        target_a.setTrue_lon(116.000);
-        target_a.setLat_move(0.0); // STATIC
-        target_a.setLon_move(0.0);
-
-        target_b.setId("B");
-        target_b.setTrue_lat(-31.88);
-        target_b.setTrue_lon(115.990);
-        target_b.setLat_move(0.0); // STATIC
-        target_b.setLon_move(0.0);
     }
 
     /* Result callback */
-    @Override
-    public void result(String geoId, double lat, double lon, double cep_elp_maj, double cep_elp_min, double cep_elp_rot) {
-        log.debug("Result -> GeoId: "+geoId+", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot);
+    @Override    /// ORIG REMOVED FOR NAV
+    public void result(String geoId, String target_id, double lat, double lon, double cep_elp_maj, double cep_elp_min, double cep_elp_rot) {
+        log.debug("Result -> GeoId: "+geoId+", TargetId: "+target_id+", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot);
     }
 
     @Test
@@ -154,11 +163,12 @@ public class AllObservationFixITs implements EfusionListener {
         {{
             put(target_a.getId(), target_a);
             put(target_b.getId(), target_b);
-            target_a.setTdoa_target_ids(Arrays.asList(new String[]{"B"})); /// IRELEVANT IN NAV, NOW SHARED BTWN TARGETS (i.e. my platforms)
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
             target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
             //put(asset_c.getId(), asset_c);
             //put(asset_d.getId(), asset_d);
         }};
+        simulatedTargetObserver.setTestTargets(targets);
 
 //        simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM   /// REMOVED IN NAV, moved into each testTarget
 //        simulatedTargetObserver.setTrue_lon(116.000);

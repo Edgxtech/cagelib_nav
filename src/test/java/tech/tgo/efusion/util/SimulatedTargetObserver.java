@@ -38,21 +38,31 @@ public class SimulatedTargetObserver extends TimerTask {
     @Override
     public void run() {
 
-        // TODO, Observation needs to be switched around: from Target to Asset - and matched as so in processor?
-        //        This may help to draw TDOA measurement lines??
-        //
-        // 1. FOR EACH testTarget, go through all assets and see which ones to generate a measurement to (NOT FROM!)
-        for (TestTarget testTarget :testTargets.values()) {
+        //log.debug("processManageer::geoMission::targets size: "+efusionProcessManager.getGeoMission().getTargets().size());
 
+        // TODO, update all sim targets locations first - to allow location information known to secondary assets
+        for (TestTarget testTarget :testTargets.values()) {
             // Generate lat,lon path of movement according to simple movement model
 //            true_lat = true_lat + lat_move; // REPLACED IN NAV
 //            true_lon = true_lon + lon_move;
             testTarget.setTrue_lat(testTarget.getTrue_lat() + testTarget.getLat_move());
             testTarget.setTrue_lon(testTarget.getTrue_lon() + testTarget.getLon_move());
-            log.debug("Moving Observer, moved target to: " + testTarget.getTrue_lat() + "," + testTarget.getTrue_lon());
+            log.debug("Moving Observer, moved target: "+testTarget.getId()+", to: " + testTarget.getTrue_lat() + "," + testTarget.getTrue_lon());
+
+            log.debug("GeoMission targets null?: "+(efusionProcessManager.getGeoMission().getTargets()==null));
 
             // update GeoMission::Target::TrueLocation
-            efusionProcessManager.getGeoMission().getTargets().get(testTarget.getId()).setTrue_current_loc(new Double[]{testTarget.getTrue_lat(), testTarget.getTrue_lon()});
+            // TODO, not sure why this is here, I believe just for plotting and engineering purposes.
+            //efusionProcessManager.getGeoMission().getTargets().get(testTarget.getId()).setTrue_current_loc(new Double[]{testTarget.getTrue_lat(), testTarget.getTrue_lon()});
+        }
+
+
+        // TODO, Observation needs to be switched around: from Target to Asset - and matched as so in processor?
+        //        This may help to draw TDOA measurement lines??
+        //
+        // 1. FOR EACH testTarget, go through all assets and see which ones to generate a measurement to (NOT FROM!)
+        for (TestTarget testTarget :testTargets.values()) {
+            log.debug("Generating new observations for target: "+testTarget.getId());
 
             double[] utm_coords = Helpers.convertLatLngToUtmNthingEasting(testTarget.getTrue_lat(), testTarget.getTrue_lon());
             double true_y = utm_coords[0]; /// TRUE (SIM) LOCATION OF MY TARGET - i.e. THE PLATFORM TO ESTIMATE
@@ -77,10 +87,13 @@ public class SimulatedTargetObserver extends TimerTask {
                         log.debug("Asset: " + asset.getId() + ", Meas range: " + meas_range);
 
                         Observation obs = new Observation(obsId, asset.getId(), asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+                        obs.setTargetId(testTarget.getId());
                         obs.setMeas(meas_range);
                         obs.setObservationType(ObservationType.range);
                         efusionProcessManager.addObservation(obs);
                     }
+
+                    log.debug("TDOA secondary tgts array empty?: "+testTarget.getTdoa_target_ids().isEmpty());
 
                     if (asset.getProvide_tdoa() != null && asset.getProvide_tdoa() && testTarget.getTdoa_target_ids() != null && !testTarget.getTdoa_target_ids().isEmpty()) {
                     /* Second asset that is providing shared tdoa measurement */
@@ -100,7 +113,8 @@ public class SimulatedTargetObserver extends TimerTask {
 //                            double b_y = utm_coords[0];
 //                            double b_x = utm_coords[1];
                             TestTarget target1 = testTargets.get(secondary_target_id);
-                            utm_coords = Helpers.convertLatLngToUtmNthingEasting(target1.getTrue_current_loc()[0], target1.getTrue_current_loc()[1]); // Changed to getTrue.. in Nav, since this is sim observer
+                            //utm_coords = Helpers.convertLatLngToUtmNthingEasting(target1.getTrue_current_loc()[0], target1.getTrue_current_loc()[1]); // Changed to getTrue.. in Nav, since this is sim observer -- TODO, however need to actually set it in this sim observer
+                            utm_coords = Helpers.convertLatLngToUtmNthingEasting(target1.getTrue_lat(), target1.getTrue_lon()); // LATEST: changed to getTrueLat/lon
                             double true_y_b = utm_coords[0]; // This
                             double true_x_b = utm_coords[1];
 
@@ -115,10 +129,11 @@ public class SimulatedTargetObserver extends TimerTask {
                             log.debug("Target: " + testTarget.getId() + ", 2nd Target: " + secondary_target_id + ", Meas tdoa: " + meas_tdoa);
 
                             Observation obs_c = new Observation(obsId, asset.getId(), asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+                            obs_c.setTargetId(testTarget.getId());
                             //obs_c.setAssetId_b(testAssets.get(secondary_asset_id).getId());  /// Replaced with below for Nav use case
-                            obs_c.setTargetId_b(testTargets.get(secondary_target_id).getId());
-                            obs_c.setLat_b(target1.getCurrent_loc()[0]); // ALTERED IN NAV
-                            obs_c.setLon_b(target1.getCurrent_loc()[1]);
+                            obs_c.setTargetId_b(secondary_target_id);
+//                            obs_c.setLat_b(target1.getCurrent_loc()[0]); // ALTERED IN NAV, this shouldn't be available in NAV TDOA since unknown target locs???
+//                            obs_c.setLon_b(target1.getCurrent_loc()[1]);   /// TODO, confirm how I need to report this, perhaps just need to use current state estimates to draw hyperbola?
                             obs_c.setMeas(meas_tdoa); // tdoa in seconds
                             obs_c.setObservationType(ObservationType.tdoa);
                             efusionProcessManager.addObservation(obs_c);
@@ -135,6 +150,7 @@ public class SimulatedTargetObserver extends TimerTask {
                         log.debug("Asset: " + asset.getId() + ", Meas AOA: " + meas_aoa);
 
                         Observation obs_d = new Observation(obsId, asset.getId(), asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+                        obs_d.setTargetId(testTarget.getId());
                         obs_d.setMeas(meas_aoa); // aoa in radians
                         obs_d.setObservationType(ObservationType.aoa);
                         efusionProcessManager.addObservation(obs_d);
@@ -185,5 +201,13 @@ public class SimulatedTargetObserver extends TimerTask {
 
     public void setTestAssets(Map<String, TestAsset> testAssets) {
         this.testAssets = testAssets;
+    }
+
+    public Map<String, TestTarget> getTestTargets() {
+        return testTargets;
+    }
+
+    public void setTestTargets(Map<String, TestTarget> testTargets) {
+        this.testTargets = testTargets;
     }
 }
