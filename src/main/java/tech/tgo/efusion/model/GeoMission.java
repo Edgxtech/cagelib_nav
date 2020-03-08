@@ -79,6 +79,9 @@ public class GeoMission {
 
     public Double filterRangeBias;
 
+    // TODO, consider holding a longer history here
+    //Map<String,GeoResult> resultBuffer = new HashMap<String,GeoResult>();
+
     public MissionMode getMissionMode() {
         return missionMode;
     }
@@ -311,4 +314,12 @@ public class GeoMission {
     public void setFilterSpecificInitialLon(Double filterSpecificInitialLon) {
         this.filterSpecificInitialLon = filterSpecificInitialLon;
     }
+
+//    public Map<String, GeoResult> getResultBuffer() {
+//        return resultBuffer;
+//    }
+//
+//    public void setResultBuffer(Map<String, GeoResult> resultBuffer) {
+//        this.resultBuffer = resultBuffer;
+//    }
 }

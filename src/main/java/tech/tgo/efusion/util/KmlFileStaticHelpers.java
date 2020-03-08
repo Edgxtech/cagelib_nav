@@ -172,6 +172,7 @@ public class KmlFileStaticHelpers {
     public static void exportTargetEstimationResult(Document doc, Element dnode, GeoMission geoMission) {
         try
         {
+            log.debug("Exporting # targets estimated posn: "+geoMission.getTargets().size());
             for (Target target : geoMission.getTargets().values()) {
                 Element crosshairStyle = doc.createElement("Style");
                 crosshairStyle.setAttribute("id", "crosshairStyle");
@@ -182,7 +183,6 @@ public class KmlFileStaticHelpers {
                 Element crosshairIcon = doc.createElement("Icon");
 
                 Element crosshairIconHref = doc.createElement("href");
-            /* http://maps.google.com/mapfiles/kml/shapes/earthquake.png */
                 crosshairIconHref.appendChild(doc.createTextNode("styles/estimated_target.png"));
 
                 crosshairStyle.appendChild(crosshairIconStyle);
@@ -194,7 +194,7 @@ public class KmlFileStaticHelpers {
                 dnode.appendChild(PFplacemark);
 
                 Element name = doc.createElement("name");
-                name.appendChild(doc.createTextNode(target.getName()));
+                name.appendChild(doc.createTextNode(target.getId()));
                 PFplacemark.appendChild(name);
 
                 PFplacemark.appendChild(crosshairStyle);
@@ -415,7 +415,7 @@ public class KmlFileStaticHelpers {
                     dnode.appendChild(measPlacemark);
 
                     Element name = doc.createElement("name");
-                    name.appendChild(doc.createTextNode("TDOA:"+geoMission.getObservations().get(ele).getAssetId()+"/"+geoMission.getObservations().get(ele).getTargetId_b()));
+                    name.appendChild(doc.createTextNode("TDOA:"+geoMission.getObservations().get(ele).getTargetId()+"/"+geoMission.getObservations().get(ele).getTargetId_b()));
                     measPlacemark.appendChild(name);
 
                     Element styleUrl = doc.createElement("styleUrl");

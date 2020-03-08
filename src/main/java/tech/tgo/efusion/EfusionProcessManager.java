@@ -18,7 +18,7 @@ import java.util.*;
  *
  * @author Timothy Edge (timmyedge)
  */
-public class EfusionProcessManager implements Serializable {
+public class EfusionProcessManager implements Serializable, EfusionListener {
 
     private static final Logger log = LoggerFactory.getLogger(EfusionProcessManager.class);
 
@@ -27,6 +27,9 @@ public class EfusionProcessManager implements Serializable {
     GeoMission geoMission;
 
     ComputeProcessor computeProcessor;
+
+//    // TODO, consider holding a longer history here
+    Map<String,GeoResult> resultBuffer = new HashMap<String,GeoResult>();
 
     public EfusionProcessManager(EfusionListener actionListener) {
         this.actionListener = actionListener;
@@ -66,6 +69,8 @@ public class EfusionProcessManager implements Serializable {
     }
 
     public void addObservation(Observation obs) throws Exception {
+        log.debug("Validating observation against number of targets: "+this.geoMission.getTargets().size());
+        EfusionValidator.validate(obs, this.geoMission.getTargets().keySet());
         EfusionValidator.validate(obs);
 
         /* Set previous measurement here, if this is a repeated measurement */
@@ -77,14 +82,14 @@ public class EfusionProcessManager implements Serializable {
             }
         }
 
-        log.debug("Adding observation: "+obs.getAssetId()+","+obs.getObservationType().name()+","+obs.getMeas()+",ID:"+obs.getId());
+        log.debug("Adding observation: "+obs.getAssetId()+","+obs.getObservationType().name()+","+obs.getMeas()+",ID:"+obs.getId()+", Target: "+obs.getTargetId());
         this.geoMission.getObservations().put(obs.getId(), obs);
 
         Object[] zones = Helpers.getUtmLatZoneLonZone(obs.getLat(), obs.getLon());
         obs.setY_latZone((char)zones[0]);
         obs.setX_lonZone((int)zones[1]);
 
-        /* Rudimentary - use zones attached to the most recent observation */
+        /* Rudimentary - use zones attached to the most recent observation. Perhaps make this a system wide property */
         this.geoMission.setLatZone(obs.getY_latZone());
         this.geoMission.setLonZone(obs.getX_lonZone());
 
@@ -134,30 +139,30 @@ public class EfusionProcessManager implements Serializable {
                 log.debug("Defining obs hyperbola geometry");
                 List<double[]> measurementHyperbola = new ArrayList<double[]>();
 
-                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2;
-                log.debug("a: "+a+", Transmitter X: "+obs.getX());
-                double tf = MyMaths.Arccosh(obs.getX() / Math.abs(a));
-                log.debug("tf: "+tf);
-                double b = obs.getY() / (Math.sinh(tf));
-                double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2));
-
-                log.debug("b: "+b);
-                log.debug("Cosh tf*a: "+Math.cosh(tf)*Math.abs(a));
-
-                //double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2; // focus length from origin, +-c respectively
-                //double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2))); // c = sqrt(a^2+b^2)
-                //double ca = (obs.getXb()-obs.getX())/(2*c); double sa = (obs.getYb()-obs.getY())/(2*c); //# COS and SIN of rot angle
-                for (double t = -2; t<= 2; t += 0.1) {
-                    double X = Math.abs(a)*Math.cosh(t); double Y = b*Math.sinh(t); //# Hyperbola branch
-                    log.debug("X/Y: "+X+","+Y);
-                    //double x = (obs.getX()+obs.getXb())/2 + X*ca - Y*sa; //# Rotated and translated
-                    //double y = (obs.getY()+obs.getYb())/2 + X*sa + Y*ca;
-                    UTMRef utmMeas = new UTMRef(X, Y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
-                    LatLng ltln = utmMeas.toLatLng();
-                    measurementHyperbola.add(new double[]{ltln.getLat(),ltln.getLng()});
-                }
-                this.geoMission.hyperbolasToShow.add(obs.getId());
-                obs.setHyperbolaGeometry(measurementHyperbola);
+//                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2;   /// WORKING - attempt to draw from known hyperbola point
+//                log.debug("a: "+a+", Transmitter X: "+obs.getX());
+//                double tf = MyMaths.Arccosh(obs.getX() / Math.abs(a));
+//                log.debug("tf: "+tf);
+//                double b = obs.getY() / (Math.sinh(tf));
+//                double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2));
+//
+//                log.debug("b: "+b);
+//                log.debug("Cosh tf*a: "+Math.cosh(tf)*Math.abs(a));
+//
+//                //double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2; // focus length from origin, +-c respectively
+//                //double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2))); // c = sqrt(a^2+b^2)
+//                //double ca = (obs.getXb()-obs.getX())/(2*c); double sa = (obs.getYb()-obs.getY())/(2*c); //# COS and SIN of rot angle
+//                for (double t = -2; t<= 2; t += 0.1) {
+//                    double X = Math.abs(a)*Math.cosh(t); double Y = b*Math.sinh(t); //# Hyperbola branch
+//                    log.debug("X/Y: "+X+","+Y);
+//                    //double x = (obs.getX()+obs.getXb())/2 + X*ca - Y*sa; //# Rotated and translated
+//                    //double y = (obs.getY()+obs.getYb())/2 + X*sa + Y*ca;
+//                    UTMRef utmMeas = new UTMRef(X, Y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
+//                    LatLng ltln = utmMeas.toLatLng();
+//                    measurementHyperbola.add(new double[]{ltln.getLat(),ltln.getLng()});
+//                }
+//                this.geoMission.hyperbolasToShow.add(obs.getId());
+//                obs.setHyperbolaGeometry(measurementHyperbola);
 
                 // Original preserved
 //                double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2; // focus length from origin, +-c respectively
@@ -173,6 +178,46 @@ public class EfusionProcessManager implements Serializable {
 //                }
 //                this.geoMission.hyperbolasToShow.add(obs.getId());
 //                obs.setHyperbolaGeometry(measurementHyperbola);
+
+
+                // COMPROMISE, use the current target estimated locations
+                //   -- However since this is the addObservation routine, may not even have a state estimate yet?
+                //    -
+                //  For the given observation target id's, check if there is a suitable state estimate available for those targets
+                //double[][] utm_x_y = computeProcessor.getCurrentEstimatesForTargets
+                // ALT, if there are current state estimates for the two targets, plot hyperbola from them
+                GeoResult r_a = this.resultBuffer.get(obs.getTargetId());
+                GeoResult r_b = this.resultBuffer.get(obs.getTargetId_b());
+                /// TODO, problem here GM object from computeProcessor has the buffer, this one doesn't
+                log.debug("Geo result_a null: "+(r_a==null) + ", Geo result_b null: "+(r_b==null));
+
+                if ((r_a!=null) && (r_b!=null)) {
+                    log.debug("Using target position for TDOA plot 1/2: "+r_a.toString());
+                    log.debug("Using target position for TDOA plot 2/2: "+r_a.toString());
+
+                    double[] r_a_utm = Helpers.convertLatLngToUtmNthingEasting(r_a.getLat(), r_a.getLon()); // RETURNS IN [NTHING===Y , EASTING===X]
+                    double[] r_b_utm = Helpers.convertLatLngToUtmNthingEasting(r_b.getLat(), r_b.getLon());
+
+                    double c = Math.sqrt(Math.pow((r_a_utm[1] - r_b_utm[1]), 2) + Math.pow((r_a_utm[0] - r_b_utm[0]), 2)) / 2; // focus length from origin, +-c respectively
+                    double a = (obs.getMeas() * Helpers.SPEED_OF_LIGHT) / 2;
+                    double b = Math.sqrt(Math.abs(Math.pow(c, 2) - Math.pow(a, 2))); // c = sqrt(a^2+b^2)
+                    double ca = (r_b_utm[1] - r_a_utm[1]) / (2 * c);
+                    double sa = (r_b_utm[0] - r_a_utm[0]) / (2 * c); //# COS and SIN of rot angle
+                    for (double t = -2; t <= 2; t += 0.1) {
+                        double X = a * Math.cosh(t);
+                        double Y = b * Math.sinh(t); //# Hyperbola branch
+                        double x = (r_a_utm[1] + r_b_utm[1]) / 2 + X * ca - Y * sa; //# Rotated and translated
+                        double y = (r_a_utm[0] + r_b_utm[0]) / 2 + X * sa + Y * ca;
+                        UTMRef utmMeas = new UTMRef(x, y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
+                        LatLng ltln = utmMeas.toLatLng();
+                        measurementHyperbola.add(new double[]{ltln.getLat(), ltln.getLng()});
+                    }
+                    this.geoMission.hyperbolasToShow.add(obs.getId());
+                    obs.setHyperbolaGeometry(measurementHyperbola);
+                }
+                else {
+                    log.debug("Not adding hyperbola measurement lines");
+                }
             }
 
             /* AOA MEASUREMENT */
@@ -229,7 +274,7 @@ public class EfusionProcessManager implements Serializable {
             throw new ConfigurationException("There were no observations, couldn't start the process");
         }
 
-        computeProcessor = new ComputeProcessor(this.actionListener, this.geoMission.observations, this.geoMission);
+        computeProcessor = new ComputeProcessor(this.actionListener, this, this.geoMission.observations, this.geoMission);
 
         Thread thread = new Thread(computeProcessor);
         thread.start();
@@ -239,6 +284,58 @@ public class EfusionProcessManager implements Serializable {
 
     public GeoMission getGeoMission() {
         return geoMission;
+    }
+
+    // TEMPORARY hold - may need to also reinitialise the state matrices based on number of targets
+    public void reconfigureTargets(Map<String,Target> targets) {
+        log.debug("Reconfiguring with # targets: "+targets.size());
+        this.geoMission.setTargets(targets);
+
+
+//        // This needs to include targets even though no observations may be present?
+//        // Determine targets requiring estimation - extract from set of observations
+//        uniqueObservedTargets = new HashSet<String>();
+//        log.debug("# active observations: "+this.observations.size());
+//        for (Observation obs : this.observations.values()) {
+//
+//            //1. determine all unique targets, then set the size of relevant matrices
+//            //2. index the state indexes in the stateIndexMap
+//            uniqueObservedTargets.add(obs.getTargetId());
+//            activeTargets.put(obs.getTargetId(), new Target(obs.getTargetId(), "ARB-NAME"));
+//            log.debug("Processing observation: "+obs.toString());
+//            if (obs.getTargetId_b()!=null) {
+//                uniqueObservedTargets.add(obs.getTargetId_b());
+//                activeTargets.put(obs.getTargetId_b(), new Target(obs.getTargetId_b(),"ARB-NAME"));
+//                log.debug("Adding (secondary) target to target set: "+obs.getTargetId_b());
+//            }
+//            log.debug("Adding target to target set: "+obs.getTargetId());
+//        }
+//
+//        //TODO, need to merge/remove targets, maintain an original set in geoMission.setTargets() which has lat/lon estimates updated to
+//        // TODO, here need to dynamically create the targets array
+//
+//        if (this.geoMission.getTargets()==null || this.geoMission.getTargets().isEmpty()) {
+//            log.debug("No target list set, initialising with # active targets: "+activeTargets.size());
+//            this.geoMission.setTargets(activeTargets);
+//        }
+//        else {
+//            log.debug("Merging with # existing targets: " + this.geoMission.getTargets().size());
+//
+//            for (Target target : this.geoMission.getTargets().values()) {
+//
+//                if (uniqueObservedTargets.contains(target.getId())) {
+//                    // retain existing geoMissionTarget
+//                    uniqueObservedTargets.remove(target.getId());
+//                }
+//            }
+//
+//            // for each remaining unique observed target, add it
+//            for (String uniqueObservedTargetId : uniqueObservedTargets) {
+//                this.geoMission.getTargets().put(uniqueObservedTargetId, new Target(uniqueObservedTargetId, "ARB-NEW-TGT-NAME"));
+//            }
+//            // Now
+//            log.debug("Merged target list with missing targets, size now: "+this.geoMission.getTargets().size());
+//        }
     }
 
     public void configure(GeoMission geoMission) throws Exception {
@@ -355,5 +452,11 @@ public class EfusionProcessManager implements Serializable {
                 throw new ConfigurationException("No filter range bias specified");
             }
         }
+    }
+
+    @Override
+    public void result(String geoId, String target_id, double lat, double lon, double cep_elp_maj, double cep_elp_min, double cep_elp_rot) {
+        log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+geoId+", TargetId: "+target_id+", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot);
+        this.resultBuffer.put(target_id, new GeoResult(geoId,target_id,lat,lon,cep_elp_maj,cep_elp_min,cep_elp_rot));
     }
 }

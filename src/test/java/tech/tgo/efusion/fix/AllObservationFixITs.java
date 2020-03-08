@@ -45,6 +45,8 @@ public class AllObservationFixITs implements EfusionListener {
 
     TestTarget target_a = new TestTarget();
     TestTarget target_b = new TestTarget();
+    TestTarget target_c = new TestTarget();
+
 
     GeoMission geoMission;
 
@@ -71,14 +73,14 @@ public class AllObservationFixITs implements EfusionListener {
         target_b.setLat_move(0.0); // STATIC
         target_b.setLon_move(0.0);
 
-        //String tgt_id_a = "MY_TGT_ID";
-        // TODO, shouldn't this be removed???? Since I need to dynamically build up targets based on observations
-//        Map<String,Target> targets = new HashMap<String,Target>();
-//        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
-//        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName()));
-//        //geoMission.setTarget(new Target("MY_TGT_ID","MY_TGT_NAME")); // REMOVED IN NAV
-//        geoMission.setTargets(targets);
+        target_c.setId("C");
+        target_c.setName("Target C");
+        target_c.setTrue_lat(-31.78); // TOP RIGHT
+        target_c.setTrue_lon(115.890);
+        target_c.setLat_move(0.0); // STATIC
+        target_c.setLon_move(0.0);
 
+        //String tgt_id_a = "MY_TGT_ID";
 
         geoMission.setGeoId("MY_GEO_ID");
         geoMission.setShowMeas(true);
@@ -158,17 +160,36 @@ public class AllObservationFixITs implements EfusionListener {
     @Test
     public void testBottom() {
         // TODO
-        // 1. Add testTargets, with associated TDOA_asset_ids
-        Map<String, TestTarget> targets = new HashMap<String, TestTarget>() /// NOTE: in the nav use case the meaning of this is TestTargets
+        // Perhaps enforce correct targets validation upfront. && validation any new observation as needing to be linked by a previously defined target?
+        //      This removes flexibility to throw new observations and dynamically adapt state matrix. (A disadvantage)
+        //
+        //
+
+        /* Client currently expected to implement logic that selects which targets should be tracked. Future auto mode could extract these from observations and reinitialise filter
+        / IF new targets are to be added dynamically, client can still choose to stop and start, while preserving latest states as first initial guesses */
+        Map<String,Target> targets = new HashMap<String,Target>();
+        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
+        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName()));
+        //geoMission.setTargets(targets);
+        efusionProcessManager.reconfigureTargets(targets);
+
+
+        // Create a set of test targets for generating observations from (for test purposes, does not have to directly match geoMission targets set to test handling observations to untracked target)
+        Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>() /// NOTE: in the nav use case the meaning of this is TestTargets
         {{
             put(target_a.getId(), target_a);
             put(target_b.getId(), target_b);
-            target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{"B"}));
             target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
-            //put(asset_c.getId(), asset_c);
+            //put(target_c.getId(), target_c);
+            //target_c.setTdoa_target_ids(Arrays.asList(new String[]{}));
             //put(asset_d.getId(), asset_d);
         }};
-        simulatedTargetObserver.setTestTargets(targets);
+
+        // TODO, testTargets can be based on simply the existing targets intended to be tracked.
+        simulatedTargetObserver.setTestTargets(testTargets);
+
+
 
 //        simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM   /// REMOVED IN NAV, moved into each testTarget
 //        simulatedTargetObserver.setTrue_lon(116.000);
@@ -181,13 +202,16 @@ public class AllObservationFixITs implements EfusionListener {
         {{
             put(asset_a.getId(), asset_a);   /// THE NUMBER OF ASSETS ARE THE NUMBER OF STATIC TX's that are measured.
             put(asset_b.getId(), asset_b);
-//            asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B"})); /// IRELEVANT IN NAV, NOW SHARED BTWN TARGETS (i.e. my platforms)
+//            asset_a.setTdoa_asset_ids(Arrays.asList(new String[]{"B"})); /// IRRELEVANT IN NAV, NOW SHARED BTWN TARGETS (i.e. my platforms)
 //            asset_b.setTdoa_asset_ids(Arrays.asList(new String[]{}));
             //put(asset_c.getId(), asset_c);
             //put(asset_d.getId(), asset_d);
         }};
         simulatedTargetObserver.setTestAssets(assets);
+        /* Execute a single observation set generation */
         simulatedTargetObserver.run();
+
+        log.debug("Number of observations added for this test: "+efusionProcessManager.getGeoMission().getObservations().size());
 
         try {
             Thread thread = efusionProcessManager.start();
@@ -196,6 +220,16 @@ public class AllObservationFixITs implements EfusionListener {
         catch (Exception e) {
             e.printStackTrace();
         }
+
+//        try {                      /// DOESNT SEEM TO WORK
+//            Thread.sleep(1000);
+//        }
+//        catch (Exception e) {
+//
+//        }
+//
+//        log.info("Running second observation set");
+//        simulatedTargetObserver.run();
     }
 
 //    @Test

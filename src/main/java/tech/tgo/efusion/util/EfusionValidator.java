@@ -6,6 +6,8 @@ import tech.tgo.efusion.model.GeoMission;
 import tech.tgo.efusion.model.Observation;
 import tech.tgo.efusion.model.ObservationType;
 
+import java.util.Set;
+
 /**
  * @author Timothy Edge (timmyedge)
  */
@@ -44,6 +46,13 @@ public class EfusionValidator {
             if (geoMission.getFilterSpecificInitialLon()==null) {
                 throw new ConfigurationException("Use of specific init condition was desired, however specific LONGITUDE was not provided");
             }
+        }
+    }
+
+    public static void validate(Observation observation, Set<String> targets) throws Exception {
+        log.debug("Validating obs for tgt: "+observation.getTargetId());
+        if (!targets.contains(observation.getTargetId())) {
+            throw new ObservationException("Observation is for a target ["+ observation.getTargetId()+"] not tracked by this mission process, reconfigure mission first");
         }
     }
 

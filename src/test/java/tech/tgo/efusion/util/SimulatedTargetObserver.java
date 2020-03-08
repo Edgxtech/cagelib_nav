@@ -32,24 +32,20 @@ public class SimulatedTargetObserver extends TimerTask {
 //    double lat_move; // = 0.001;
 //    double lon_move; // = 0.001;
 
-    /* Similar mechanism to maintain observation ids for different assets to targets should be implemented in client logic */
+    /* Simple mechanism to maintain observation ids for different assets to targets. Similar method should be implemented in client logic */
     Map<String,Long> assetToObservationIdMapping = new HashMap<String,Long>();
 
     @Override
     public void run() {
 
-        //log.debug("processManageer::geoMission::targets size: "+efusionProcessManager.getGeoMission().getTargets().size());
+        log.debug("Running sim observer");
 
-        // TODO, update all sim targets locations first - to allow location information known to secondary assets
+        // Update all sim targets locations first - to allow location information known to secondary assets
         for (TestTarget testTarget :testTargets.values()) {
             // Generate lat,lon path of movement according to simple movement model
-//            true_lat = true_lat + lat_move; // REPLACED IN NAV
-//            true_lon = true_lon + lon_move;
             testTarget.setTrue_lat(testTarget.getTrue_lat() + testTarget.getLat_move());
             testTarget.setTrue_lon(testTarget.getTrue_lon() + testTarget.getLon_move());
             log.debug("Moving Observer, moved target: "+testTarget.getId()+", to: " + testTarget.getTrue_lat() + "," + testTarget.getTrue_lon());
-
-            log.debug("GeoMission targets null?: "+(efusionProcessManager.getGeoMission().getTargets()==null));
 
             // update GeoMission::Target::TrueLocation
             // TODO, not sure why this is here, I believe just for plotting and engineering purposes.
@@ -57,9 +53,6 @@ public class SimulatedTargetObserver extends TimerTask {
         }
 
 
-        // TODO, Observation needs to be switched around: from Target to Asset - and matched as so in processor?
-        //        This may help to draw TDOA measurement lines??
-        //
         // 1. FOR EACH testTarget, go through all assets and see which ones to generate a measurement to (NOT FROM!)
         for (TestTarget testTarget :testTargets.values()) {
             log.debug("Generating new observations for target: "+testTarget.getId());
@@ -68,19 +61,24 @@ public class SimulatedTargetObserver extends TimerTask {
             double true_y = utm_coords[0]; /// TRUE (SIM) LOCATION OF MY TARGET - i.e. THE PLATFORM TO ESTIMATE
             double true_x = utm_coords[1];
 
-        /* for each asset, generate relevant observations */
+            /* for each asset, generate relevant observations */
             log.debug("Regenerating observations from # assets: " + testAssets.keySet().size());
             for (TestAsset asset : testAssets.values()) {
                 utm_coords = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
                 double asset_y = utm_coords[0];
                 double asset_x = utm_coords[1];
 
-                try {
+                //try {
                     if (asset.getProvide_range() != null && asset.getProvide_range()) {
-                        Long obsId = assetToObservationIdMapping.get(asset.getId() + "_" + ObservationType.range.name());
+
+                        //// TODO, up to here, need to account for different target types having own observations
+                        //      currently seeing 4 total obs, expect 8 (2 tgts, 2 assets, 2 obs types)
+
+                        /* Simple mechanism just for maintaining unique observation ids */
+                        Long obsId = assetToObservationIdMapping.get(asset.getId() + "_" + ObservationType.range.name() + "_" + testTarget.getId());
                         if (obsId == null) {
                             obsId = new Random().nextLong();
-                            assetToObservationIdMapping.put(asset.getId() + "_" + ObservationType.range.name(), obsId);
+                            assetToObservationIdMapping.put(asset.getId() + "_" + ObservationType.range.name() + "_" + testTarget.getId(), obsId);
                         }
                         //double meas_range = Math.sqrt(Math.pow(a_y-true_y,2) + Math.pow(a_x-true_x,2)) + Math.random()*range_rand_factor; orig
                         double meas_range = ObservationTestHelpers.getRangeMeasurement(asset_y, asset_x, true_y, true_x, range_rand_factor);
@@ -90,7 +88,14 @@ public class SimulatedTargetObserver extends TimerTask {
                         obs.setTargetId(testTarget.getId());
                         obs.setMeas(meas_range);
                         obs.setObservationType(ObservationType.range);
-                        efusionProcessManager.addObservation(obs);
+
+                        try {
+                            efusionProcessManager.addObservation(obs);
+                        } catch (Exception e) {
+                            log.error("Couldn't add observation: " + obs.toString()+":: "+e.getMessage());
+                            e.printStackTrace();
+                        }
+
                     }
 
                     log.debug("TDOA secondary tgts array empty?: "+testTarget.getTdoa_target_ids().isEmpty());
@@ -101,10 +106,10 @@ public class SimulatedTargetObserver extends TimerTask {
                         // TODO, this needs to be rewired such that it should from test target_a to test target_b.
 
                         for (String secondary_target_id : testTarget.getTdoa_target_ids()) {
-                            Long obsId = assetToObservationIdMapping.get(asset.getId() + ":" + secondary_target_id + "_" + ObservationType.tdoa.name());
+                            Long obsId = assetToObservationIdMapping.get(asset.getId() + ":" + secondary_target_id + "_" + ObservationType.tdoa.name() + "_" + testTarget.getId());
                             if (obsId == null) {
                                 obsId = new Random().nextLong();
-                                assetToObservationIdMapping.put(asset.getId() + ":" + secondary_target_id + "_" + ObservationType.tdoa.name(), obsId);
+                                assetToObservationIdMapping.put(asset.getId() + ":" + secondary_target_id + "_" + ObservationType.tdoa.name() + "_" + testTarget.getId(), obsId);
                             }
 
                             // TODO, replace this as testTargets instead
@@ -136,15 +141,22 @@ public class SimulatedTargetObserver extends TimerTask {
 //                            obs_c.setLon_b(target1.getCurrent_loc()[1]);   /// TODO, confirm how I need to report this, perhaps just need to use current state estimates to draw hyperbola?
                             obs_c.setMeas(meas_tdoa); // tdoa in seconds
                             obs_c.setObservationType(ObservationType.tdoa);
-                            efusionProcessManager.addObservation(obs_c);
+
+                            try {
+                                efusionProcessManager.addObservation(obs_c);
+                            } catch (Exception e) {
+                                log.error("Couldn't add observation: " + obs_c.toString()+":: "+e.getMessage());
+                                e.printStackTrace();
+                            }
+                            //efusionProcessManager.addObservation(obs_c);
                         }
                     }
 
                     if (asset.getProvide_aoa() != null && asset.getProvide_aoa()) {
-                        Long obsId = assetToObservationIdMapping.get(asset.getId() + "_" + ObservationType.aoa.name());
+                        Long obsId = assetToObservationIdMapping.get(asset.getId() + "_" + ObservationType.aoa.name() + "_" + testTarget.getId());
                         if (obsId == null) {
                             obsId = new Random().nextLong();
-                            assetToObservationIdMapping.put(asset.getId() + "_" + ObservationType.aoa.name(), obsId);
+                            assetToObservationIdMapping.put(asset.getId() + "_" + ObservationType.aoa.name() + "_" + testTarget.getId(), obsId);
                         }
                         double meas_aoa = ObservationTestHelpers.getAoaMeasurement(asset_y, asset_x, true_y, true_x, aoa_rand_factor);
                         log.debug("Asset: " + asset.getId() + ", Meas AOA: " + meas_aoa);
@@ -153,12 +165,19 @@ public class SimulatedTargetObserver extends TimerTask {
                         obs_d.setTargetId(testTarget.getId());
                         obs_d.setMeas(meas_aoa); // aoa in radians
                         obs_d.setObservationType(ObservationType.aoa);
-                        efusionProcessManager.addObservation(obs_d);
+
+                        try {
+                            efusionProcessManager.addObservation(obs_d);
+                        } catch (Exception e) {
+                            log.error("Couldn't add observation: " + obs_d.toString()+":: "+e.getMessage());
+                            e.printStackTrace();
+                        }
+                        //efusionProcessManager.addObservation(obs_d);
                     }
-                } catch (Exception e) {
-                    log.error("Couldn't add all observations for test asset: " + asset.getId());
-                    e.printStackTrace();
-                }
+//                } catch (Exception e) {
+//                    log.error("Couldn't add all observations for test asset: " + asset.getId());
+//                    e.printStackTrace();
+//                }
             }
         }
     }
