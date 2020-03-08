@@ -195,8 +195,8 @@ public class AllObservationITs implements EfusionListener {
         //simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM
         //simulatedTargetObserver.setTrue_lon(116.000);
         simulatedTargetObserver.setAoa_rand_factor(0.0);
-        simulatedTargetObserver.setRange_rand_factor(5);
-        simulatedTargetObserver.setTdoa_rand_factor(0.000000001);
+        simulatedTargetObserver.setRange_rand_factor(0);
+        simulatedTargetObserver.setTdoa_rand_factor(0.0);
         //simulatedTargetObserver.setLat_move(+0.005); // MOVE NE
         //simulatedTargetObserver.setLon_move(+0.005);
         Map<String, TestAsset> assets = new HashMap<String, TestAsset>()

@@ -193,7 +193,7 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
 
                 if ((r_a!=null) && (r_b!=null)) {
                     log.debug("Using target position for TDOA plot 1/2: "+r_a.toString());
-                    log.debug("Using target position for TDOA plot 2/2: "+r_a.toString());
+                    log.debug("Using target position for TDOA plot 2/2: "+r_b.toString());
 
                     double[] r_a_utm = Helpers.convertLatLngToUtmNthingEasting(r_a.getLat(), r_a.getLon()); // RETURNS IN [NTHING===Y , EASTING===X]
                     double[] r_b_utm = Helpers.convertLatLngToUtmNthingEasting(r_b.getLat(), r_b.getLon());

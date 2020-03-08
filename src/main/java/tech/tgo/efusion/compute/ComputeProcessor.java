@@ -307,10 +307,11 @@ public class ComputeProcessor implements Runnable {
 
                         H = new Array2DRowRealMatrix(1, matrice_size);
                         // Set Jacobian based on which target it is, lookup stateIndex map
-                        H.setEntry(0, stateIndexes[0] + (matrice_size / 2), dfdx); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
-                        H.setEntry(0, stateIndexes[1] + (matrice_size / 2), dfdy);
-                        //H.setEntry(0, stateIndexes_b[0] + (matrice_size / 2), dfdx); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
-                        //H.setEntry(0, stateIndexes_b[1] + (matrice_size / 2), dfdy);
+                        // NOTE: for TDOA, since dependent secondary asset is a state also, need to share the state innovations, split them
+                        H.setEntry(0, stateIndexes[0] + (matrice_size / 2), dfdx/2); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
+                        H.setEntry(0, stateIndexes[1] + (matrice_size / 2), dfdy/2);
+                        H.setEntry(0, stateIndexes_b[0] + (matrice_size / 2), dfdx/2); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
+                        H.setEntry(0, stateIndexes_b[1] + (matrice_size / 2), dfdy/2);
                         //log.debug("Created H as: "+H);
                         // H will determine how much to change the relavant state. Since the obs relates to a single target, it should only need to have representation against it and not the other targets?
                         // Except for TDOA? There is an interdependency???
@@ -326,7 +327,7 @@ public class ComputeProcessor implements Runnable {
 
                         d = obs.getMeas() * Helpers.SPEED_OF_LIGHT;
 
-                        log.debug("TDOA innovation: " + f_est + ", vs d: " + d);
+                        log.trace("TDOA innovation: " + f_est + ", vs d: " + d);
                     } else if (obs.getObservationType().equals(ObservationType.aoa)) {
 
                         //H = recalculateH_AOA(obs.getX(), obs.getY(), xk, yk);
@@ -369,6 +370,8 @@ public class ComputeProcessor implements Runnable {
 
                     RealMatrix toInvert = (H.multiply(Pk).multiply(H.transpose()).add(Rk));
                     RealMatrix Inverse = (new LUDecomposition(toInvert)).getSolver().getInverse();
+
+                    K = Pk.multiply(H.transpose()).multiply(Inverse).scalarMultiply(this.geoMission.getFilterRangeBias());
 
                     double rk = d - f_est;
 
@@ -416,10 +419,6 @@ public class ComputeProcessor implements Runnable {
                     }
 
                     double[] HXk = H.operate(Xk).toArray();
-                    log.debug("K: "+K);
-                    log.debug("Rk: "+rk);
-                    log.debug("HXk: "+HXk);
-
                     RealVector innov_ = K.scalarMultiply(rk - HXk[0]).getColumnVector(0);
 
                     innov = innov_.add(innov);
