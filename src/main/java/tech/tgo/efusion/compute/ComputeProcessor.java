@@ -606,7 +606,8 @@ public class ComputeProcessor implements Runnable {
 
     public void dispatchResult(RealVector Xk) {
 
-        log.debug("State: "+Xk.getEntry(0)+","+Xk.getEntry(1));
+        //log.debug("State: "+Xk.getEntry(0)+","+Xk.getEntry(1));
+        log.debug("Dispatching result for # targets: "+this.geoMission.getTargets().size());
 
         for (Target target : this.geoMission.getTargets().values()) {
             log.debug("Dispatching result for target: "+target.getId());

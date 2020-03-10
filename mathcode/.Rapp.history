@@ -1,0 +1,102 @@
+source("/Users/mobile3/workspace/RWorkspace/randHistogram.R")
+install.packages("diptest")
+?diptest
+??diptest
+pwd
+source("/Users/mobile3/workspace/RWorkspace/randHistogram.R")
+?dip
+??dip
+source("/Users/mobile3/workspace/RWorkspace/dipTestExample.Rd")
+installed.packages(lib.loc = NULL, priority = NULL,#
+                   noCache = FALSE, fields = NULL,#
+                   subarch = .Platform$r_arch)
+source("/Users/mobile3/workspace/RWorkspace/dipTestExample0.R")
+ls
+pwd
+source("/Users/mobile3/workspace/RWorkspace/CassandraConnTest.R")
+source("/Users/mobile3/workspace/RWorkspace/CassandraConn.Rd")
+y
+install.packages("RJDBC", lib="~/R-packages/")
+source('~/workspace/RWorkspace/CassConn.R')
+install.packages("DBI", lib="~/R-packages/")
+source('~/workspace/RWorkspace/CassConn.R')
+install.packages("RJDBC", lib="~/R-packages/")
+source('~/workspace/RWorkspace/CassConn.R')
+exit
+source('~/workspace/RWorkspace/CassConn.R')
+R CMD INSTALL DBI_0.3.1.tar.gz
+source('~/workspace/RWorkspace/CassConn.R')
+install.packages("rJava", lib="~/R-packages/")
+source('~/workspace/RWorkspace/CassConn.R')
+java -version
+source('~/workspace/RWorkspace/CassConn.R')
+library(rJava)#
+.jinit()#
+.jaddClassPath("/Users/mobile3/Documents/workspaceEclipseLuna/RJava/bin")    # replace with the path to the folder containing your class file#
+.jclassPath()
+myExchange <- .jnew("myExchange")
+source('~/workspace/RWorkspace/CassConn.R')
+setwd('~/Documents/Workspace/efusionlib_nav/mathcode')
+source('hyperbola_calc.R')
+source('hyperbola_calc.R')
+plot(result)
+plot(result[,1],result[,2])
+plot(result[1,],result[2,])
+result[0,]
+result[,0]
+result[,0]
+source('hyperbola_calc.R')
+source('hyperbola_calc.R')
+result[1]
+result[2]
+result[2,2]
+result[2]$x
+result[2]
+result[2]$x
+result[2][1]$x
+result[2][1]
+result[2]$y
+result[5]$y
+result[5]$
+t
+result[5]
+result[5][0]
+result[5][0][0]
+result[5][0]$1
+result[5][0]$y
+c(1,2,3,4,5)
+plot(c(1,2,3,4,5))
+result$x
+source('hyperbola_calc.R')
+result$x
+source('hyperbola_calc.R')
+cbind(1:5, 6:10, 11:15)
+df<-data.frame("hi","bye")#
+names(df)<-c("hello","goodbye")#
+#
+de<-data.frame("hola","ciao")#
+names(de)<-c("hello","goodbye")#
+#
+newdf <- rbind(df, de)
+df<-data.frame("hi","bye")
+newdf
+newdf$hello
+newdf$hello[0]
+newdf$hello[1]
+newdf$hello[2]
+newdf$hello[2]
+source('hyperbola_calc.R')
+x_y
+x_y$x
+x_y$y
+plot(x_y$x,x_y$y)
+source('hyperbola_calc.R')
+source('hyperbola_calc.R')
+-0.5^2
+36*2
+-0.25
+sqrt(71)
+0.5^2
+source('hyperbola_calc.R')
+source('hyperbola_calc.R')
+source('hyperbola_calc.R')

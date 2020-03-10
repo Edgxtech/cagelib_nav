@@ -60,6 +60,32 @@ for(t in seq(-2, 2, 0.1)) {
 }
 
 print(x_y)
-plot(x_y$x,x_y$y) ## PLOTS Single hyperbola branch
+#plot(x_y$x,x_y$y) ## PLOTS Single hyperbola branch
+
+
+## ATTEMPT to find t @ given point X,Y (i.e. assets location): 6,6, for given ddoa (to focus).
+##      need to get a though, distance to vertex
+##      is it possible to say @t=0: this corresponds to the vertex point, then equate what a is?
+##    NOTE: distance between two foci is 2c. Thus c= ddoa / 2
+X <- 6
+Y <- 6
+ddoa <- 1.1
+c <- ddoa / 2
+# acosh ~= ln(x + sqrt(x^2 - 1))
+
+
+## Attempting to solve a=sqrt(c2 - b2), acosh(X/a) == asihn(Y/b)
+## WOLFRAM INPUT: solve (X / (sqrt(c^2-b^2))) = (Y/b + sqrt(1+Y^2/b^2) + 1/(Y/b + sqrt(1+Y^2/b^2))) / 2 for b
+##  THIS is not a bad resource: https://mathworld.wolfram.com/Hyperbola.html
+b <- sqrt(sqrt((-c^2 + X^2 + Y^2)^2 + 4*c^2*Y^2 ) + c^2-X^2-Y^2) / sqrt(2)
+a <- sqrt(c^2 - b^2)
+print (paste('X: ',X,', Y: ',Y,', c: ',c,', b: ',b,', a: ',a))
+
+xv <- a * cosh(0)
+yv <- b * sinh(0)
+print (paste('Xv: ',xv,', Yv: ',yv))
+
+
+ 
 
 
