@@ -19,6 +19,13 @@ public class Target {
         this.name = name;
     }
 
+    /* Used for testing */
+    public Target(String id, String name, Double[] true_current_loc) {
+        this.id = id;
+        this.name = name;
+        this.true_current_loc = true_current_loc;
+    }
+
     public Target() {}
 
     public String getId() {
