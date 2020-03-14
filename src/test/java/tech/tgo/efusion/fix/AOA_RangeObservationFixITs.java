@@ -6,8 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.tgo.efusion.EfusionListener;
 import tech.tgo.efusion.EfusionProcessManager;
-import tech.tgo.efusion.model.MissionMode;
 import tech.tgo.efusion.model.GeoMission;
+import tech.tgo.efusion.model.MissionMode;
 import tech.tgo.efusion.model.Target;
 import tech.tgo.efusion.util.ConfigurationException;
 import tech.tgo.efusion.util.SimulatedTargetObserver;
@@ -22,9 +22,9 @@ import java.util.Map;
 /**
  * @author Timothy Edge (timmyedge)
  */
-public class AllObservationFixITs implements EfusionListener {
+public class AOA_RangeObservationFixITs implements EfusionListener {
 
-    private static final Logger log = LoggerFactory.getLogger(AllObservationFixITs.class);
+    private static final Logger log = LoggerFactory.getLogger(AOA_RangeObservationFixITs.class);
 
     Map<String,GeoMission> missionsMap = new HashMap<String,GeoMission>();
 
@@ -158,6 +158,51 @@ public class AllObservationFixITs implements EfusionListener {
     }
 
     @Test
+    public void testBottom() {
+        /* Targets to be tracked by filter, specified by client */
+        Map<String,Target> targets = new HashMap<String,Target>();
+        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
+        efusionProcessManager.reconfigureTargets(targets);
+
+        /* Targets for the sim observer to report data on */
+        // TestTargets could be based on simply the existing targets intended to be tracked.
+        /// REMOVED IN NAV, moved into each testTarget, latMove, lonMove, True_lat/lon removed in NAV impl
+        Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
+        {{
+            put(target_a.getId(), target_a);
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
+        }};
+        simulatedTargetObserver.setTestTargets(testTargets);
+
+        simulatedTargetObserver.setAoa_rand_factor(0.0);
+        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
+        simulatedTargetObserver.setRange_rand_factor(200);
+
+        /* Assets to measure observations to/from */
+        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
+        {{
+            put(asset_a.getId(), asset_a);
+            put(asset_b.getId(), asset_b);
+            put(asset_c.getId(), asset_c);
+            put(asset_d.getId(), asset_d);
+        }};
+        simulatedTargetObserver.setTestAssets(assets);
+
+        /* Execute a single observation set generation */
+        simulatedTargetObserver.run();
+
+        log.debug("Number of observations added for this test: "+efusionProcessManager.getGeoMission().getObservations().size());
+
+        try {
+            Thread thread = efusionProcessManager.start();
+            thread.join();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
     public void testBottom_TwoTargets() {
         /* Targets to be tracked by filter, specified by client */
         Map<String,Target> targets = new HashMap<String,Target>();
@@ -170,12 +215,12 @@ public class AllObservationFixITs implements EfusionListener {
         {{
             put(target_a.getId(), target_a);
             put(target_b.getId(), target_b);
-            target_a.setTdoa_target_ids(Arrays.asList(new String[]{"B"}));
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
             target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
-        simulatedTargetObserver.setAoa_rand_factor(0.1);
+        simulatedTargetObserver.setAoa_rand_factor(0.0);
         simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
         simulatedTargetObserver.setRange_rand_factor(200);
 
@@ -208,16 +253,13 @@ public class AllObservationFixITs implements EfusionListener {
         /* Targets to be tracked by filter, specified by client */
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
-        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName(),new Double[]{target_b.getTrue_lat(),target_b.getTrue_lon()}));
         efusionProcessManager.reconfigureTargets(targets);
 
         /* Targets for the sim observer to report data on */
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);
-            put(target_b.getId(), target_b);
-            target_a.setTdoa_target_ids(Arrays.asList(new String[]{"B"}));
-            target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 

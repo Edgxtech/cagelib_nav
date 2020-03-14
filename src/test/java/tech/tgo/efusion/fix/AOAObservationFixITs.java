@@ -13,8 +13,6 @@ import tech.tgo.efusion.util.ConfigurationException;
 import tech.tgo.efusion.util.SimulatedTargetObserver;
 import tech.tgo.efusion.util.TestAsset;
 import tech.tgo.efusion.util.TestTarget;
-import uk.me.jstott.jcoord.LatLng;
-import uk.me.jstott.jcoord.UTMRef;
 
 import java.io.IOException;
 import java.util.Arrays;

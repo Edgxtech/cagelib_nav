@@ -382,36 +382,42 @@ public class ComputeProcessor implements Runnable {
                                 nonAoaNextState = Xk.add(innov);
                             }
 
+                            // TODO, this needs to be stateIndex aware. It is creating an effect where innovations are created for the wrong state/target
+
                         /* gradient from obs to prevailing pressure direction */
-                            double pressure_angle = Math.atan((nonAoaNextState.getEntry(2) - obs.getY()) / (nonAoaNextState.getEntry(0) - obs.getX())) * 180 / Math.PI;
-                            //log.debug("P-ang: "+pressure_angle+", f_est: "+f_est+", Yp: "+innov.getEntry(3)+", Pressure: "+nonAoaNextState+", INNOV: "+innov);
-                            if (nonAoaNextState.getEntry(0) < obs.getX()) {
+                                // Math.atan((nonAoaNextState.getEntry(stateIndexes[0] + (matrice_size / 2)) - obs.getY()) / (nonAoaNextState.getEntry(stateIndexes[1]) - obs.getX())) * 180 / Math.PI;
+                                //     stateIndexes[1] + matrice_size/2
+                            //double pressure_angle = Math.atan((nonAoaNextState.getEntry(2) - obs.getY()) / (nonAoaNextState.getEntry(0) - obs.getX())) * 180 / Math.PI;
+                            double pressure_angle = Math.atan((nonAoaNextState.getEntry(stateIndexes[0] + (matrice_size / 2)) - obs.getY()) / (nonAoaNextState.getEntry(stateIndexes[1]) - obs.getX())) * 180 / Math.PI;
+                            /// /log.debug("P-ang: "+pressure_angle+", f_est: "+f_est+", Yp: "+innov.getEntry(3)+", Pressure: "+nonAoaNextState+", INNOV: "+innov);
+                            if (nonAoaNextState.getEntry(stateIndexes[0]) < obs.getX()) {
                                 pressure_angle = pressure_angle + 180;
                             }
 
-                            if (nonAoaNextState.getEntry(1) < obs.getY() && nonAoaNextState.getEntry(0) >= obs.getX()) {
+                            if (nonAoaNextState.getEntry(stateIndexes[1]) < obs.getY() && nonAoaNextState.getEntry(stateIndexes[0]) >= obs.getX()) {
                                 pressure_angle = 360 - Math.abs(pressure_angle);
                             }
                             //log.debug("P-ang (adjusted): "+pressure_angle);
 
+
                             if (Math.abs(pressure_angle) > Math.abs(f_est)) {
-                                if (Xk.getEntry(1) > obs.getY() && Xk.getEntry(0) > obs.getX()) {
+                                if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
                                     rk = Math.abs(rk);
-                                } else if (Xk.getEntry(1) > obs.getY() && Xk.getEntry(0) < obs.getX()) {
+                                } else if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
                                     rk = -Math.abs(rk);
-                                } else if (Xk.getEntry(1) < obs.getY() && Xk.getEntry(0) < obs.getX()) {
+                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
                                     rk = Math.abs(rk);
-                                } else if (Xk.getEntry(1) < obs.getY() && Xk.getEntry(0) > obs.getX()) {
+                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
                                     rk = -Math.abs(rk);
                                 }
                             } else {
-                                if (Xk.getEntry(1) > obs.getY() && Xk.getEntry(0) > obs.getX()) {
+                                if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
                                     rk = -Math.abs(rk);
-                                } else if (Xk.getEntry(1) > obs.getY() && Xk.getEntry(0) < obs.getX()) {
+                                } else if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
                                     rk = Math.abs(rk);
-                                } else if (Xk.getEntry(1) < obs.getY() && Xk.getEntry(0) < obs.getX()) {
+                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
                                     rk = -Math.abs(rk);
-                                } else if (Xk.getEntry(1) < obs.getY() && Xk.getEntry(0) > obs.getX()) {
+                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
                                     rk = Math.abs(rk);
                                 }
                             }
@@ -489,7 +495,7 @@ public class ComputeProcessor implements Runnable {
                                 } else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
                                     f_est_adj = f_est_adj * Math.PI / 360;
                                 }
-                                log.debug("Observation utilisation: assets:" + obs_state.getObs().getAssetId() + ", type: " + obs_state.getObs().getObservationType().name() + ", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas() + ", innov: " + obs_state.getInnov());
+                                log.debug("Observation utilisation: asset:" + obs_state.getObs().getAssetId() +", Target: "+obs_state.getObs().getTargetId()+ ", type: " + obs_state.getObs().getObservationType().name() + ", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas() + ", innov: " + obs_state.getInnov());
                             }
                         }
 
