@@ -363,6 +363,11 @@ public class ComputeProcessor implements Runnable {
 //                            f_est = 360 - Math.abs(f_est);
 //                        }
 
+
+                        /// TEMP DEV TESTING
+                        //f_est = 2*f_est;
+
+
                         d = obs.getMeas() * 180 / Math.PI;
 
                         //log.debug("AOA innovation: " + f_est + ", vs d: " + d);
@@ -493,7 +498,7 @@ public class ComputeProcessor implements Runnable {
                                 if (obs_state.getObs().getObservationType().equals(ObservationType.tdoa)) {
                                     f_est_adj = f_est_adj / Helpers.SPEED_OF_LIGHT;
                                 } else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
-                                    f_est_adj = f_est_adj * Math.PI / 360;
+                                    f_est_adj = f_est_adj * Math.PI / 180;
                                 }
                                 log.debug("Observation utilisation: asset:" + obs_state.getObs().getAssetId() +", Target: "+obs_state.getObs().getTargetId()+ ", type: " + obs_state.getObs().getObservationType().name() + ", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas() + ", innov: " + obs_state.getInnov());
                             }

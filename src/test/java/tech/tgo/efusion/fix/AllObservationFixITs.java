@@ -260,7 +260,7 @@ public class AllObservationFixITs implements EfusionListener {
         {{
             put(target_a.getId(), target_a);
             put(target_b.getId(), target_b);
-            target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{"B"}));
             target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         // TestTargets can be based on simply the existing targets intended to be tracked.
