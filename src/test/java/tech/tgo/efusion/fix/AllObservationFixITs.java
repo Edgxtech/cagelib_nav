@@ -216,12 +216,12 @@ public class AllObservationFixITs implements EfusionListener {
         {{
             put(target_a.getId(), target_a);
             put(target_b.getId(), target_b);
-            target_a.setTdoa_target_ids(Arrays.asList(new String[]{"B"}));
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
             target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
-        simulatedTargetObserver.setAoa_rand_factor(0.0);
+        simulatedTargetObserver.setAoa_rand_factor(0.1);
         simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
         simulatedTargetObserver.setRange_rand_factor(200);
 
@@ -230,6 +230,8 @@ public class AllObservationFixITs implements EfusionListener {
         {{
             put(asset_a.getId(), asset_a);
             put(asset_b.getId(), asset_b);
+            put(asset_c.getId(), asset_c);
+            //put(asset_d.getId(), asset_d);
         }};
         simulatedTargetObserver.setTestAssets(assets);
 
