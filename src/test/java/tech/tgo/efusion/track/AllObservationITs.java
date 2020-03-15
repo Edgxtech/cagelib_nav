@@ -163,12 +163,14 @@ public class AllObservationITs implements EfusionListener {
     @Test
     public void testMoverNorthEast() throws Exception {
 
+        target_a.setTrue_lat(-31.98); // BOTTOM
+        target_a.setTrue_lon(116.000);
+        target_a.setLat_move(0.005); // NE
+        target_a.setLon_move(0.005);
+
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
         efusionProcessManager.reconfigureTargets(targets);
-
-        target_a.setLat_move(0.005); // NE
-        target_a.setLon_move(0.005);
 
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>() /// NOTE: in the nav use case the meaning of this is TestTargets
         {{
@@ -177,8 +179,6 @@ public class AllObservationITs implements EfusionListener {
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
-        //simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM
-        //simulatedTargetObserver.setTrue_lon(116.000);
         simulatedTargetObserver.setAoa_rand_factor(0.0);
         simulatedTargetObserver.setRange_rand_factor(0);
         simulatedTargetObserver.setTdoa_rand_factor(0.0);
@@ -207,28 +207,25 @@ public class AllObservationITs implements EfusionListener {
     @Test
     public void testMoverNorthEast_TwoTargets() throws Exception {
 
-        Map<String,Target> targets = new HashMap<String,Target>();
-        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
-        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName()));
-        efusionProcessManager.reconfigureTargets(targets);
-
         target_a.setLat_move(0.005); // NE
         target_a.setLon_move(0.005);
         target_b.setLat_move(0.001); // NE
         target_b.setLon_move(0.001);
 
+        Map<String,Target> targets = new HashMap<String,Target>();
+        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
+        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName(),new Double[]{target_b.getTrue_lat(),target_b.getTrue_lon()}));
+        efusionProcessManager.reconfigureTargets(targets);
+
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);
             put(target_b.getId(), target_b);
-            target_a.setTdoa_target_ids(Arrays.asList(new String[]{"B"}));
+            target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
             target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
-
-        //simulatedTargetObserver.setTrue_lat(-31.98); // BOTTOM
-        //simulatedTargetObserver.setTrue_lon(116.000);
         simulatedTargetObserver.setAoa_rand_factor(0.0);
         simulatedTargetObserver.setRange_rand_factor(0);
         simulatedTargetObserver.setTdoa_rand_factor(0.0);

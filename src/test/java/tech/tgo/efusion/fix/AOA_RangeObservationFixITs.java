@@ -158,7 +158,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom() throws Exception{
+    public void testBottom() throws Exception {
         /* Targets to be tracked by filter, specified by client */
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));

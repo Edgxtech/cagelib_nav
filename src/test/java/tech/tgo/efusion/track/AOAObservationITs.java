@@ -142,13 +142,12 @@ public class AOAObservationITs implements EfusionListener {
 
     @Test
     public void testMoverNorthEast() throws Exception {
+        target_a.setLat_move(0.005); // NE
+        target_a.setLon_move(0.005);
 
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
         efusionProcessManager.reconfigureTargets(targets);
-
-        target_a.setLat_move(0.005); // NE
-        target_a.setLon_move(0.005);
 
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>() /// NOTE: in the nav use case the meaning of this is TestTargets
         {{
