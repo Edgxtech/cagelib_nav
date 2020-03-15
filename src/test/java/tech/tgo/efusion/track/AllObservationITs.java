@@ -161,7 +161,7 @@ public class AllObservationITs implements EfusionListener {
 
 
     @Test
-    public void testMoverNorthEast() {
+    public void testMoverNorthEast() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
@@ -205,7 +205,7 @@ public class AllObservationITs implements EfusionListener {
     }
 
     @Test
-    public void testMoverNorthEast_TwoTargets() {
+    public void testMoverNorthEast_TwoTargets() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));

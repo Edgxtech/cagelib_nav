@@ -5,7 +5,9 @@ import org.slf4j.LoggerFactory;
 import tech.tgo.efusion.model.GeoMission;
 import tech.tgo.efusion.model.Observation;
 import tech.tgo.efusion.model.ObservationType;
+import tech.tgo.efusion.model.Target;
 
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -100,6 +102,18 @@ public class EfusionValidator {
             }
             if (observation.getMeas()<0 || observation.getMeas()>2*Math.PI) {
                 throw new ObservationException("AOA value should be between 0 and 2*pi for observation type "+observation.getObservationType().name());
+            }
+        }
+    }
+
+    public static void validateTargets(Collection<Target> targets) throws Exception {
+        for (Target target : targets) {
+            log.debug("Validating tgt: " + target.getId());
+            if (target.getId()==null) {
+                throw new ConfigurationException("Target description has no Id");
+            }
+            if (target.getName()==null) {
+                throw new ConfigurationException("Target description for target [" + target.getId() + "] has no name");
             }
         }
     }

@@ -478,18 +478,32 @@ public class ComputeProcessor implements Runnable {
                     Integer[] stateIndexes = stateIndexMap.get(target.getId());
 
                     /* A measure of residual changes the filter intends to make - using delta_x/y innovation data */
-                    double residual = Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size / 2)) + Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size / 2))));
-                    log.trace("Residual, for target: [" + target.getId() + ": " + residual);
+                    double residual = Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size / 2))) + Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size / 2)));
+                    log.trace("Residual, for target: [" + target.getId() + "]: " + residual);
 
 
                     /// NOTE: if residual threshold not met here, will be stuck in loop
 
 
+                    // ADDED in _nav: Normalise the residual measurement
+                    residual = residual / this.observations.size();
+
+
                     if (residual < this.geoMission.getFilterDispatchResidualThreshold()) {
-                        log.debug("Dispatching Result From # Observations: " + this.observations.size());
-                        log.debug("Residual Movements: " + residual);
-                        log.debug("Residual Innovation: " + innov);
-                        log.debug("Covariance: " + Pk);
+
+//                        log.debug("Innov: "+ innov);
+//                        log.debug("Delta-x innovation: "+ innov.getEntry(stateIndexes[0] + (matrice_size / 2)));
+//                        log.debug("Delta-y innovation: "+ innov.getEntry(stateIndexes[1] + (matrice_size / 2)));
+//                        log.debug("Delta-x innovation Abs: "+ Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size / 2))));
+//                        log.debug("Delta-y innovation Abs: "+ Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size / 2))));
+//                        log.debug("Residual: "+ (Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size / 2))) + Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size / 2)))));
+
+                        log.debug("Measurement Error: "+geoMission.getFilterMeasurementError());
+
+                        log.debug("target: [" + target.getId() + "]: Dispatching Result From # Observations: " + this.observations.size());
+                        log.debug("target: [" + target.getId() + "]: Residual Movements (Normalised): " + residual);
+                        log.debug("target: [" + target.getId() + "]: Residual Innovation: " + innov);
+                        log.debug("target: [" + target.getId() + "]: Covariance: " + Pk);
 
                         if (log.isDebugEnabled()) {
                             log.debug("Printing observation utilisation data for # observations: "+filterObservationDTOs.size());
@@ -511,7 +525,12 @@ public class ComputeProcessor implements Runnable {
                         // TODO, if all targets are below threshold then break
 
                         if (geoMission.getMissionMode().equals(MissionMode.fix)) {
-                            if (residual < this.geoMission.getFilterConvergenceResidualThreshold()) {
+
+                            /// DEVING
+                            if (residual < this.geoMission.getFilterMeasurementError()/10) {
+
+                            //if (residual < this.geoMission.getFilterConvergenceResidualThreshold()) {  /// ORIGINAL
+
 //                                log.debug("Exiting since this is a FIX Mode run and filter has converged to threshold");
 //                                running.set(false);
 //                                break;

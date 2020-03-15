@@ -102,23 +102,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
         this.geoMission.getAssets().put(obs.getAssetId(),asset);
 
 
-        // TODO, Or perhaps here put merge targets?
-
-
-
-        /* There is a second asset to register its location */
-        if (obs.getObservationType().equals(ObservationType.tdoa)) {
-//            double[] utm_coords_b = Helpers.convertLatLngToUtmNthingEasting(obs.getLat_b(), obs.getLon_b());
-//            obs.setYb(utm_coords_b[0]);
-//            obs.setXb(utm_coords_b[1]);
-//
-//            Asset asset_b = new Asset(obs.getAssetId_b(),new double[]{obs.getLat_b(),obs.getLon_b()});
-//            this.geoMission.getAssets().put(obs.getAssetId_b(),asset_b);
-
-            // TODO, this is now performed via target state estimate
-
-            //this.geoMission.getTargets().put(obs.getTargetId_b(),)
-        }
 
         if (this.geoMission.getShowMeas()) {
             /* RANGE MEASUREMENT */
@@ -139,50 +122,8 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                 log.debug("Defining obs hyperbola geometry");
                 List<double[]> measurementHyperbola = new ArrayList<double[]>();
 
-//                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2;   /// WORKING - attempt to draw from known hyperbola point
-//                log.debug("a: "+a+", Transmitter X: "+obs.getX());
-//                double tf = MyMaths.Arccosh(obs.getX() / Math.abs(a));
-//                log.debug("tf: "+tf);
-//                double b = obs.getY() / (Math.sinh(tf));
-//                double c = Math.sqrt(Math.pow(a,2) + Math.pow(b,2));
-//
-//                log.debug("b: "+b);
-//                log.debug("Cosh tf*a: "+Math.cosh(tf)*Math.abs(a));
-//
-//                //double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2; // focus length from origin, +-c respectively
-//                //double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2))); // c = sqrt(a^2+b^2)
-//                //double ca = (obs.getXb()-obs.getX())/(2*c); double sa = (obs.getYb()-obs.getY())/(2*c); //# COS and SIN of rot angle
-//                for (double t = -2; t<= 2; t += 0.1) {
-//                    double X = Math.abs(a)*Math.cosh(t); double Y = b*Math.sinh(t); //# Hyperbola branch
-//                    log.debug("X/Y: "+X+","+Y);
-//                    //double x = (obs.getX()+obs.getXb())/2 + X*ca - Y*sa; //# Rotated and translated
-//                    //double y = (obs.getY()+obs.getYb())/2 + X*sa + Y*ca;
-//                    UTMRef utmMeas = new UTMRef(X, Y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
-//                    LatLng ltln = utmMeas.toLatLng();
-//                    measurementHyperbola.add(new double[]{ltln.getLat(),ltln.getLng()});
-//                }
-//                this.geoMission.hyperbolasToShow.add(obs.getId());
-//                obs.setHyperbolaGeometry(measurementHyperbola);
-
-                // Original preserved
-//                double c = Math.sqrt(Math.pow((obs.getX()-obs.getXb()),2)+Math.pow((obs.getYb()-obs.getY()),2))/2; // focus length from origin, +-c respectively
-//                double a=(obs.getMeas()* Helpers.SPEED_OF_LIGHT)/2; double b=Math.sqrt(Math.abs(Math.pow(c,2)-Math.pow(a,2))); // c = sqrt(a^2+b^2)
-//                double ca = (obs.getXb()-obs.getX())/(2*c); double sa = (obs.getYb()-obs.getY())/(2*c); //# COS and SIN of rot angle
-//                for (double t = -2; t<= 2; t += 0.1) {
-//                    double X = a*Math.cosh(t); double Y = b*Math.sinh(t); //# Hyperbola branch
-//                    double x = (obs.getX()+obs.getXb())/2 + X*ca - Y*sa; //# Rotated and translated
-//                    double y = (obs.getY()+obs.getYb())/2 + X*sa + Y*ca;
-//                    UTMRef utmMeas = new UTMRef(x, y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
-//                    LatLng ltln = utmMeas.toLatLng();
-//                    measurementHyperbola.add(new double[]{ltln.getLat(),ltln.getLng()});
-//                }
-//                this.geoMission.hyperbolasToShow.add(obs.getId());
-//                obs.setHyperbolaGeometry(measurementHyperbola);
-
-
                 // COMPROMISE, use the current target estimated locations
-                //   -- However since this is the addObservation routine, may not even have a state estimate yet?
-                //    -
+                //   -- However since this is the addObservation routine, may not even have a state estimate yet
                 //  For the given observation target id's, check if there is a suitable state estimate available for those targets
                 //double[][] utm_x_y = computeProcessor.getCurrentEstimatesForTargets
                 // ALT, if there are current state estimates for the two targets, plot hyperbola from them
@@ -287,10 +228,11 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
     }
 
     // TEMPORARY hold - may need to also reinitialise the state matrices based on number of targets
-    public void reconfigureTargets(Map<String,Target> targets) {
+    public void reconfigureTargets(Map<String,Target> targets) throws Exception {
         log.debug("Reconfiguring with # targets: "+targets.size());
         this.geoMission.setTargets(targets);
 
+        EfusionValidator.validateTargets(targets.values());
 
 //        // This needs to include targets even though no observations may be present?
 //        // Determine targets requiring estimation - extract from set of observations

@@ -146,7 +146,7 @@ public class AOAObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom() {
+    public void testBottom() throws Exception {
         target_a.setTrue_lat(-31.98); // BOTTOM
         target_a.setTrue_lon(116.000);
 
@@ -185,7 +185,7 @@ public class AOAObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom_TwoAssets() {
+    public void testBottom_TwoAssets() throws Exception {
         target_a.setTrue_lat(-31.98); // BOTTOM
         target_b.setTrue_lon(116.000);
 
@@ -224,7 +224,7 @@ public class AOAObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testTop() {
+    public void testTop() throws Exception {
         target_a.setTrue_lat(-31.7); // TOP
         target_a.setTrue_lon(115.80);
 

@@ -141,7 +141,7 @@ public class AOAObservationITs implements EfusionListener {
     }
 
     @Test
-    public void testMoverNorthEast() {
+    public void testMoverNorthEast() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
@@ -183,7 +183,7 @@ public class AOAObservationITs implements EfusionListener {
     }
 
     @Test
-    public void testMoverNorthEast_TwoTargets() {
+    public void testMoverNorthEast_TwoTargets() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
@@ -232,7 +232,7 @@ public class AOAObservationITs implements EfusionListener {
     }
 
     @Test
-    public void testMoverNorthEast_TwoAssets() {
+    public void testMoverNorthEast_TwoAssets() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
@@ -273,7 +273,7 @@ public class AOAObservationITs implements EfusionListener {
     }
 
     @Test
-    public void testMoverNorthEast_TwoAssets_TwoTargets() {
+    public void testMoverNorthEast_TwoAssets_TwoTargets() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));

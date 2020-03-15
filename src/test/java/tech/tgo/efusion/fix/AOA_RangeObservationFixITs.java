@@ -158,7 +158,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom() {
+    public void testBottom() throws Exception{
         /* Targets to be tracked by filter, specified by client */
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
@@ -203,7 +203,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom_TwoTargets() {
+    public void testBottom_TwoTargets() throws Exception {
         /* Targets to be tracked by filter, specified by client */
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
@@ -249,7 +249,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom_TwoAssets() {
+    public void testBottom_TwoAssets() throws Exception {
         /* Targets to be tracked by filter, specified by client */
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
@@ -290,7 +290,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom_TwoAssets_TwoTargets() {
+    public void testBottom_TwoAssets_TwoTargets() throws Exception {
         /* Targets to be tracked by filter, specified by client */
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
@@ -336,7 +336,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom_FourAssets_FourTargets() {
+    public void testBottom_FourAssets_FourTargets() throws Exception {
         /* Targets to be tracked by filter, specified by client */
         Map<String,Target> targets = new HashMap<String,Target>();
         targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
@@ -388,7 +388,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testLeft() {
+    public void testLeft() throws Exception {
         target_a.setTrue_lat(-31.98);
         target_a.setTrue_lon(115.80);
 
@@ -435,7 +435,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
 
 
     @Test
-    public void testTopRight() {
+    public void testTopRight() throws Exception {
         target_a.setTrue_lat(-31.7);
         target_a.setTrue_lon(116.08);
 
@@ -481,7 +481,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testTop() {
+    public void testTop() throws Exception {
         target_a.setTrue_lat(-31.7);
         target_a.setTrue_lon(115.80);
 
@@ -527,7 +527,7 @@ public class AOA_RangeObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testRight() {
+    public void testRight() throws Exception {
         target_a.setTrue_lat(-31.895);
         target_a.setTrue_lon(116.124);
 
