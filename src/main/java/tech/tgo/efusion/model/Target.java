@@ -12,6 +12,7 @@ public class Target {
     double elp_minor;
     double elp_rot;
 
+    /* Used for Dev and Testing, field validation if true location is known, library plotting functions can plot as reference point */
     Double[] true_current_loc;
 
     public Target(String id, String name) {

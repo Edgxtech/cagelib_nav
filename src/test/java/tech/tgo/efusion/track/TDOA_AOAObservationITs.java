@@ -163,8 +163,6 @@ public class TDOA_AOAObservationITs implements EfusionListener {
         efusionProcessManager.reconfigureTargets(targets);
 
         /* Targets for the sim observer to report data on */
-        // TestTargets could be based on simply the existing targets intended to be tracked.
-        /// REMOVED IN NAV, moved into each testTarget, latMove, lonMove, True_lat/lon removed in NAV impl
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);
@@ -214,8 +212,6 @@ public class TDOA_AOAObservationITs implements EfusionListener {
         efusionProcessManager.reconfigureTargets(targets);
 
         /* Targets for the sim observer to report data on */
-        // TestTargets could be based on simply the existing targets intended to be tracked.
-        /// REMOVED IN NAV, moved into each testTarget, latMove, lonMove, True_lat/lon removed in NAV impl
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);
@@ -262,8 +258,6 @@ public class TDOA_AOAObservationITs implements EfusionListener {
         efusionProcessManager.reconfigureTargets(targets);
 
         /* Targets for the sim observer to report data on */
-        // TestTargets could be based on simply the existing targets intended to be tracked.
-        /// REMOVED IN NAV, moved into each testTarget, latMove, lonMove, True_lat/lon removed in NAV impl
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);
@@ -362,8 +356,6 @@ public class TDOA_AOAObservationITs implements EfusionListener {
         efusionProcessManager.reconfigureTargets(targets);
 
         /* Targets for the sim observer to report data on */
-        // TestTargets could be based on simply the existing targets intended to be tracked.
-        /// REMOVED IN NAV, moved into each testTarget, latMove, lonMove, True_lat/lon removed in NAV impl
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);

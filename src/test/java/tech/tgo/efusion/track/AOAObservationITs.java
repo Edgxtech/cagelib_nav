@@ -146,7 +146,8 @@ public class AOAObservationITs implements EfusionListener {
         target_a.setLon_move(0.005);
 
         Map<String,Target> targets = new HashMap<String,Target>();
-        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
+        //targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
+        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
         efusionProcessManager.reconfigureTargets(targets);
 
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>() /// NOTE: in the nav use case the meaning of this is TestTargets
@@ -185,8 +186,10 @@ public class AOAObservationITs implements EfusionListener {
     public void testMoverNorthEast_TwoTargets() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
-        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
-        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName()));
+        //targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
+        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
+        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName(),new Double[]{target_b.getTrue_lat(),target_b.getTrue_lon()}));
+        //targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName()));
         efusionProcessManager.reconfigureTargets(targets);
 
         // Create a set of test targets for generating observations from (for test purposes, does not have to directly match geoMission targets set to test handling observations to untracked target)
@@ -234,7 +237,8 @@ public class AOAObservationITs implements EfusionListener {
     public void testMoverNorthEast_TwoAssets() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
-        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
+        //targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
+        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
         efusionProcessManager.reconfigureTargets(targets);
 
         target_a.setLat_move(0.005); // NE
@@ -275,8 +279,10 @@ public class AOAObservationITs implements EfusionListener {
     public void testMoverNorthEast_TwoAssets_TwoTargets() throws Exception {
 
         Map<String,Target> targets = new HashMap<String,Target>();
-        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
-        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName()));
+        targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
+        //targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName()));
+        //targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName()));
+        targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName(),new Double[]{target_b.getTrue_lat(),target_b.getTrue_lon()}));
         efusionProcessManager.reconfigureTargets(targets);
 
         // Create a set of test targets for generating observations from (for test purposes, does not have to directly match geoMission targets set to test handling observations to untracked target)
