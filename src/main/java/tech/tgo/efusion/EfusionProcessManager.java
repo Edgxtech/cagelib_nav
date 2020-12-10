@@ -215,6 +215,9 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
             throw new ConfigurationException("There were no observations, couldn't start the process");
         }
 
+
+        // TODO, Change this to Callable/Future Task ???
+
         computeProcessor = new ComputeProcessor(this.actionListener, this, this.geoMission.observations, this.geoMission);
 
         Thread thread = new Thread(computeProcessor);

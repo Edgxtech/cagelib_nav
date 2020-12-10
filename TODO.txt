@@ -13,6 +13,7 @@ NOTE: May be error in residual calculation, Math.abs bracket in the wrong locati
 - Generate demonstration schedule. specific tests to run and why [For effusion]
 - Choose different name
 - If I have known asset locations, cant I request that they tdoa me? Other platforms, depending how confident they are with position, could be an asset also?
+- Update staticFileHelpers -> plotCep, change rotationTransformMatrix bottom row to sin, cos (rather than cos, sin)
 
 
 FUTURE:
