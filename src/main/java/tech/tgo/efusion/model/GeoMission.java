@@ -1,5 +1,7 @@
 package tech.tgo.efusion.model;
 
+import tech.tgo.efusion.compute.ComputeResults;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -78,6 +80,10 @@ public class GeoMission {
     public Double filterTDOABias;
 
     public Double filterRangeBias;
+
+    public ComputeResults computeResults;
+
+    public Target target;
 
     // TODO, consider holding a longer history here
     //Map<String,GeoResult> resultBuffer = new HashMap<String,GeoResult>();
@@ -322,4 +328,21 @@ public class GeoMission {
 //    public void setResultBuffer(Map<String, GeoResult> resultBuffer) {
 //        this.resultBuffer = resultBuffer;
 //    }
+
+
+    public ComputeResults getComputeResults() {
+        return computeResults;
+    }
+
+    public void setComputeResults(ComputeResults computeResults) {
+        this.computeResults = computeResults;
+    }
+
+    public Target getTarget() {
+        return target;
+    }
+
+    public void setTarget(Target target) {
+        this.target = target;
+    }
 }

@@ -18,9 +18,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Extended Kalman Filter Fusion Processor
  * @author Timothy Edge (timmyedge)
  */
-public class ComputeProcessor implements Callable<ComputeResults> {
+public class ComputeProcessor_MultiTargets_AL0 implements Callable<ComputeResults> {
 
-    private static final Logger log = LoggerFactory.getLogger(ComputeProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(ComputeProcessor_MultiTargets_AL0.class);
 
     private EfusionListener efusionListener; // push results to user client
 
@@ -34,14 +34,8 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
 
-    double[][] ThiData = { {1,0}, {0,1}};
-    RealMatrix Thi = new Array2DRowRealMatrix(ThiData);
-
-    double[][] controlData = { {0}, {0}};
-    RealMatrix B = new Array2DRowRealMatrix(controlData);
-
-    double[][] initCovarData = {{1, 0}, {0, 1}};
-    RealMatrix Pinit = new Array2DRowRealMatrix(initCovarData);
+    RealMatrix Thi;
+    RealMatrix Pinit;
 
     RealMatrix Qu;
     RealMatrix Rk;
@@ -49,14 +43,9 @@ public class ComputeProcessor implements Callable<ComputeResults> {
     RealVector Xk;
     RealMatrix Pk;
 
-    double[] innovd = {0,0};
     RealVector innov;
-
-    double[][] P_innovd = {{0,0}, {0,0}};
     RealMatrix P_innov;
-
-    double[][] eyeData = {{1,0}, {0,1}};
-    RealMatrix eye = new Array2DRowRealMatrix(eyeData);
+    RealMatrix eye;
 
     RealMatrix H;
     double xk;
@@ -76,7 +65,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
     /*
      * Create processor for the given config, observations and client implemented listener
      */
-    public ComputeProcessor(EfusionListener efusionListener, EfusionListener internalListener, Map<Long,Observation> observations, GeoMission geoMission)
+    public ComputeProcessor_MultiTargets_AL0(EfusionListener efusionListener, EfusionListener internalListener, Map<Long,Observation> observations, GeoMission geoMission)
     {
         this.efusionListener = efusionListener;
         this.geoMission = geoMission;
@@ -114,11 +103,46 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         }
         log.debug("Filter start state: "+start_x_y[0]+","+start_x_y[1]);
 
-        RealVector Xinit = new ArrayRealVector(start_x_y);
 
         // Rebuild the filters state based on number of observing targets
 
+        // For each unique target, pad out the matrices
+        // 1. For 1 target, Thi=4x4, 2, 8x8 ... etc...
+        log.debug("Unique targets: "+this.geoMission.getTargets().size());
+        number_unique_targets = this.geoMission.getTargets().size();
+        matrice_size = number_unique_targets*4; // states * delta_states * number of targets
 
+        // initialise Xinit [for reuse to re-initialise Xk]
+        log.debug("Defining state vector, size: "+matrice_size);
+        RealVector Xinit = new ArrayRealVector(matrice_size);
+
+        //initialise Thi
+        Thi = new Array2DRowRealMatrix(matrice_size, matrice_size);
+        int i=0;
+        for (Target target : this.geoMission.getTargets().values()) {
+            // Create like this: 1 0 0 0 1 0 0 0; 0 1 0 0 0 1 0 0 ...
+            Thi.setEntry(i,i,1);                             // x
+            Thi.setEntry(i,i+(matrice_size/2),1);        // delta_x
+            Thi.setEntry(i+1,i+1,1);                  // y
+            Thi.setEntry(i+1,i+1+(matrice_size/2),1); // delta_y
+
+            // Create like this: init_lat, init_lon, init_lat_b, init_lon_b, 1, 1, 1, 1
+            Xinit.setEntry(i,start_x_y[0]); // x
+            Xinit.setEntry(i+(matrice_size/2), 1); // delta_x
+            Xinit.setEntry(i+1, start_x_y[1]); // y
+            Xinit.setEntry(i+1+(matrice_size/2), 1); // delta_y
+
+            stateIndexMap.put(target.getId(), new Integer[]{i, i+1});
+            i=i+2;
+        }
+        log.debug("Set Thi as: "+Thi);
+
+        Pinit = MatrixUtils.createRealIdentityMatrix(matrice_size);//new Array2DRowRealMatrix(matrice_size, matrice_size);
+        MatrixUtils.createRealIdentityMatrix(matrice_size);
+
+        eye = MatrixUtils.createRealIdentityMatrix(matrice_size); //new Array2DRowRealMatrix(matrice_size, matrice_size);
+
+        log.debug("Set Eye as: "+eye);
 
         // Set initial process noise data
         /* Uses defaults - overridden by some implementations (required for pure tdoa processing) */
@@ -126,9 +150,8 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         log.debug("Set filter process noise data as: "+eye.scalarMultiply(0.01));
 
         Xk = Xinit;
-        Pk = Pinit.scalarMultiply(0.01);
-        log.debug("Running Fix Execution with Init State: "+Xk);
-        log.debug("Running Fix Execution with Init State Covariance: "+Pk);
+
+        Pk = Pinit.scalarMultiply(1000.0);
 
         log.trace("Initialising Stage Observations as current observations, #: "+this.geoMission.observations.size());
         setStaged_observations(this.geoMission.observations);
@@ -208,12 +231,9 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
             Pk = (Thi.multiply(Pk).multiply(Thi.transpose())).add(Qu);
 
-//            /* reinitialise various collections */
-//            innov = new ArrayRealVector(matrice_size); //(innovd);
-//            P_innov = new Array2DRowRealMatrix(matrice_size, matrice_size); //(P_innovd);
-
-            innov = new ArrayRealVector(innovd);
-            P_innov = new Array2DRowRealMatrix(P_innovd);
+            /* reinitialise various collections */
+            innov = new ArrayRealVector(matrice_size); //(innovd);
+            P_innov = new Array2DRowRealMatrix(matrice_size, matrice_size); //(P_innovd);
             filterObservationDTOs.removeAllElements();
             RealVector nonAoaNextState = null;
             Iterator obsIterator = this.observations.values().iterator();
@@ -233,11 +253,11 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                     //     Needs to support many targets, and ability to retrieve that targets state easily
                     //     A map containing the filter state x/y indexes, mapped to the targets ID?
                     // State index map should be set up upon mission creation
-//                    Integer[] stateIndexes = stateIndexMap.get(obs.getTargetId());
-//                    log.trace("Retrieved state indices: " + stateIndexes[0] + "," + stateIndexes[1]);
-                    xk = Xk.getEntry(0);
-                    yk = Xk.getEntry(1);
-                    // REMOVED MULTI TGT FOR SNET
+                    Integer[] stateIndexes = stateIndexMap.get(obs.getTargetId());
+                    log.trace("Retrieved state indices: " + stateIndexes[0] + "," + stateIndexes[1]);
+
+                    xk = Xk.getEntry(stateIndexes[0]);
+                    yk = Xk.getEntry(stateIndexes[1]);
 
 
                     double f_est = 0.0;
@@ -246,26 +266,24 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
                     if (obs.getObservationType().equals(ObservationType.range)) {
 
-////                    H = recalculateH(obs.getX(), obs.getY(), xk, yk);
-//                        double R1 = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow(obs.getY() - yk, 2));    // Note: obs.X/Y are the tower (asset) known locations
-//                        double dfdx = -(obs.getX() - xk) / R1;
-//                        double dfdy = -(obs.getY() - yk) / R1;
-//
-//                        /// TODO, need to pad out the jacobian, to be dynamic against state size. Since this observation only relates to state of xk,yk df/dxy are zero??
-//                        H = new Array2DRowRealMatrix(1, matrice_size);
-//
-//                        // Set Jacobian based on which target it is, lookup stateIndex map
-//
-//                        H.setEntry(0, stateIndexes[0] + (matrice_size / 2), dfdx); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
-//                        H.setEntry(0, stateIndexes[1] + (matrice_size / 2), dfdy);
-//                        //log.debug("Created H as: "+H);
-//                        // H will determine how much to change the relavant state. Since the obs relates to a single target, it should only need to have representation against it and not the other targets?
-//                        // Except for TDOA? There is an interdependency???
-//
-////                    double[][] jacobianData = {{0, 0, dfdx, dfdy}};  // DEPRECATED IN NAV
-////                    H = new Array2DRowRealMatrix(jacobianData);
+//                    H = recalculateH(obs.getX(), obs.getY(), xk, yk);
+                        double R1 = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow(obs.getY() - yk, 2));    // Note: obs.X/Y are the tower (asset) known locations
+                        double dfdx = -(obs.getX() - xk) / R1;
+                        double dfdy = -(obs.getY() - yk) / R1;
 
-                        H = recalculateH(obs.getX(), obs.getY(), xk, yk);
+                        /// TODO, need to pad out the jacobian, to be dynamic against state size. Since this observation only relates to state of xk,yk df/dxy are zero??
+                        H = new Array2DRowRealMatrix(1, matrice_size);
+
+                        // Set Jacobian based on which target it is, lookup stateIndex map
+
+                        H.setEntry(0, stateIndexes[0] + (matrice_size / 2), dfdx); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
+                        H.setEntry(0, stateIndexes[1] + (matrice_size / 2), dfdy);
+                        //log.debug("Created H as: "+H);
+                        // H will determine how much to change the relavant state. Since the obs relates to a single target, it should only need to have representation against it and not the other targets?
+                        // Except for TDOA? There is an interdependency???
+
+//                    double[][] jacobianData = {{0, 0, dfdx, dfdy}};  // DEPRECATED IN NAV
+//                    H = new Array2DRowRealMatrix(jacobianData);
 
                         f_est = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow(obs.getY() - yk, 2));
 
@@ -273,98 +291,84 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
                         log.trace("RANGE innovation: " + f_est + ", vs d: " + d);
                     } else if (obs.getObservationType().equals(ObservationType.tdoa)) {
-                            log.warn("Ignoring TDOA meas, not implemented");
 
-//                        // If its TDOA, also need state indexes for the second asset the observation is using
-//                        Integer[] stateIndexes_b = stateIndexMap.get(obs.getTargetId_b());
-//                        double xk_b = Xk.getEntry(stateIndexes_b[0]);
-//                        double yk_b = Xk.getEntry(stateIndexes_b[1]);
-//
-//
-//                        //H = recalculateH_TDOA(obs.getX(), obs.getY(), obs.getXb(), obs.getYb(), xk, yk);//.scalarMultiply(-1); // temp scalar mult this oddly seems to fix an issue
-//                        // ref method: public RealMatrix recalculateH_TDOA(double x, double y, double x2, double y2, double Xk1, double Xk2) {
-//                        double R1 = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow(obs.getY() - yk, 2));
-//                        double R2 = Math.sqrt(Math.pow((obs.getX() - xk_b), 2) + Math.pow(obs.getY() - yk_b, 2));
-//
-//                        double dfdx = (-obs.getX() + xk) / R1 - (-obs.getX() + xk_b) / R2;
-//                        double dfdy = (-obs.getY() + yk) / R1 - (-obs.getY() + yk_b) / R2;
-//
-//                        H = new Array2DRowRealMatrix(1, matrice_size);
-//                        // Set Jacobian based on which target it is, lookup stateIndex map
-//                        // NOTE: for TDOA, since dependent secondary asset is a state also, need to share the state innovations, split them
-//                        H.setEntry(0, stateIndexes[0] + (matrice_size / 2), dfdx/2); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
-//                        H.setEntry(0, stateIndexes[1] + (matrice_size / 2), dfdy/2);
-//                        H.setEntry(0, stateIndexes_b[0] + (matrice_size / 2), dfdx/2); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
-//                        H.setEntry(0, stateIndexes_b[1] + (matrice_size / 2), dfdy/2);
-//                        //log.debug("Created H as: "+H);
-//                        // H will determine how much to change the relavant state. Since the obs relates to a single target, it should only need to have representation against it and not the other targets?
-//                        // Except for TDOA? There is an interdependency???
-//                        // TODO, perhaps need to produce df/dx1,df/dy1,df/dx2,df/dy2 ???
-//
-////                    double[][] jacobianData = {{0, 0, dfdx, dfdy}}; --- DEPRECATED IN NAV
-////                    H = new Array2DRowRealMatrix(jacobianData);
-//
-//
-//                        // Swapped the meaning of Obs::X/Y - now means the true loc of the transmitter.
-//                        //     xk/yk,xk_b/yk_b are now the estimated locations of targets (i.e. own position)
-//                        f_est = Math.sqrt(Math.pow((xk - obs.getX()), 2) + Math.pow(yk - obs.getY(), 2)) - Math.sqrt(Math.pow((xk_b - obs.getX()), 2) + Math.pow(yk_b - obs.getY(), 2));
-//
-//                        d = obs.getMeas() * Helpers.SPEED_OF_LIGHT;
-//
-//                        H = recalculateH_TDOA(obs.getX(), obs.getY(), xk, yk);
-//
-//                        log.trace("TDOA innovation: " + f_est + ", vs d: " + d);
+
+                        // If its TDOA, also need state indexes for the second asset the observation is using
+                        Integer[] stateIndexes_b = stateIndexMap.get(obs.getTargetId_b());
+                        double xk_b = Xk.getEntry(stateIndexes_b[0]);
+                        double yk_b = Xk.getEntry(stateIndexes_b[1]);
+
+
+                        //H = recalculateH_TDOA(obs.getX(), obs.getY(), obs.getXb(), obs.getYb(), xk, yk);//.scalarMultiply(-1); // temp scalar mult this oddly seems to fix an issue
+                        // ref method: public RealMatrix recalculateH_TDOA(double x, double y, double x2, double y2, double Xk1, double Xk2) {
+                        double R1 = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow(obs.getY() - yk, 2));
+                        double R2 = Math.sqrt(Math.pow((obs.getX() - xk_b), 2) + Math.pow(obs.getY() - yk_b, 2));
+
+                        double dfdx = (-obs.getX() + xk) / R1 - (-obs.getX() + xk_b) / R2;
+                        double dfdy = (-obs.getY() + yk) / R1 - (-obs.getY() + yk_b) / R2;
+
+                        H = new Array2DRowRealMatrix(1, matrice_size);
+                        // Set Jacobian based on which target it is, lookup stateIndex map
+                        // NOTE: for TDOA, since dependent secondary asset is a state also, need to share the state innovations, split them
+                        H.setEntry(0, stateIndexes[0] + (matrice_size / 2), dfdx/2); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
+                        H.setEntry(0, stateIndexes[1] + (matrice_size / 2), dfdy/2);
+                        H.setEntry(0, stateIndexes_b[0] + (matrice_size / 2), dfdx/2); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example]
+                        H.setEntry(0, stateIndexes_b[1] + (matrice_size / 2), dfdy/2);
+                        //log.debug("Created H as: "+H);
+                        // H will determine how much to change the relavant state. Since the obs relates to a single target, it should only need to have representation against it and not the other targets?
+                        // Except for TDOA? There is an interdependency???
+                        // TODO, perhaps need to produce df/dx1,df/dy1,df/dx2,df/dy2 ???
+
+//                    double[][] jacobianData = {{0, 0, dfdx, dfdy}}; --- DEPRECATED IN NAV
+//                    H = new Array2DRowRealMatrix(jacobianData);
+
+
+                        // Swapped the meaning of Obs::X/Y - now means the true loc of the transmitter.
+                        //     xk/yk,xk_b/yk_b are now the estimated locations of targets (i.e. own position)
+                        f_est = Math.sqrt(Math.pow((xk - obs.getX()), 2) + Math.pow(yk - obs.getY(), 2)) - Math.sqrt(Math.pow((xk_b - obs.getX()), 2) + Math.pow(yk_b - obs.getY(), 2));
+
+                        d = obs.getMeas() * Helpers.SPEED_OF_LIGHT;
+
+                        log.trace("TDOA innovation: " + f_est + ", vs d: " + d);
                     } else if (obs.getObservationType().equals(ObservationType.aoa)) {
 
-//                        //H = recalculateH_AOA(obs.getX(), obs.getY(), xk, yk);
-//                        // ref method: public RealMatrix recalculateH_AOA(double x, double y, double Xk1, double Xk2)
-//                        double R1 = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow((obs.getY() - yk), 2)); // Note: better performance using sqrt
-//                        double dfdx = (obs.getY() - yk) / R1;  // Note d/d"x" = "y - y_est"/..... on purpose linearisation   /// ORIGINAL
-//                        double dfdy = -(obs.getX() - xk) / R1;
-////                        double dfdx = ( yk - obs.getY()) / R1;  // Note d/d"x" = "y - y_est"/..... on purpose linearisation
-////                        double dfdy = -(xk - obs.getX()) / R1;
-//
-//                        H = new Array2DRowRealMatrix(1, matrice_size);
-//                        H.setEntry(0, stateIndexes[0] + (matrice_size / 2), dfdx); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example], {{0,0,0,0,df/dx1,df/dy1,df/dx2,df/y2}} [duel tgt example]
-//                        H.setEntry(0, stateIndexes[1] + (matrice_size / 2), dfdy);
-//                        //log.debug("Created H as: "+H);
-////                    double[][] jacobianData = {{0, 0, dfdx, dfdy}}; --- DEPRECATED IN NAV
-////                    H = new Array2DRowRealMatrix(jacobianData);
-//
-//
-//                        f_est = Math.atan(( obs.getY() - yk) / ( obs.getX() - xk)) * 180 / Math.PI; /// ORIGINAL
-//                        //f_est = Math.atan(( yk - obs.getY()) / ( xk - obs.getX())) * 180 / Math.PI;
-//
-//                        if (xk < obs.getX()) { /// ORIGINAL
-//                            f_est = f_est + 180;
-//                        }
-//
-//                        if (yk < obs.getY() && xk >= obs.getX()) {
-//                            f_est = 360 - Math.abs(f_est);
-//                        }
-////                        if (obs.getX() < xk) {
-////                            f_est = f_est + 180;
-////                        }
-////
-////                        if (obs.getY() < yk && obs.getX() >= xk) {
-////                            f_est = 360 - Math.abs(f_est);
-////                        }
-//
-//
-//                        /// TEMP DEV TESTING
-//                        //f_est = 2*f_est;
+                        //H = recalculateH_AOA(obs.getX(), obs.getY(), xk, yk);
+                        // ref method: public RealMatrix recalculateH_AOA(double x, double y, double Xk1, double Xk2)
+                        double R1 = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow((obs.getY() - yk), 2)); // Note: better performance using sqrt
+                        double dfdx = (obs.getY() - yk) / R1;  // Note d/d"x" = "y - y_est"/..... on purpose linearisation   /// ORIGINAL
+                        double dfdy = -(obs.getX() - xk) / R1;
+//                        double dfdx = ( yk - obs.getY()) / R1;  // Note d/d"x" = "y - y_est"/..... on purpose linearisation
+//                        double dfdy = -(xk - obs.getX()) / R1;
 
-                        H = recalculateH_AOA(obs.getX(), obs.getY(), xk, yk);
+                        H = new Array2DRowRealMatrix(1, matrice_size);
+                        H.setEntry(0, stateIndexes[0] + (matrice_size / 2), dfdx); // create like this: double[][], {{0, 0, dfdx, dfdy}}; [single target example], {{0,0,0,0,df/dx1,df/dy1,df/dx2,df/y2}} [duel tgt example]
+                        H.setEntry(0, stateIndexes[1] + (matrice_size / 2), dfdy);
+                        //log.debug("Created H as: "+H);
+//                    double[][] jacobianData = {{0, 0, dfdx, dfdy}}; --- DEPRECATED IN NAV
+//                    H = new Array2DRowRealMatrix(jacobianData);
 
-                        f_est = Math.atan((obs.getY() - yk)/(obs.getX() - xk))*180/Math.PI;
+                        f_est = Math.atan(( obs.getY() - yk) / ( obs.getX() - xk)) * 180 / Math.PI; /// ORIGINAL
+                        //f_est = Math.atan(( yk - obs.getY()) / ( xk - obs.getX())) * 180 / Math.PI;
 
-                        if (xk<obs.getX()) {
+                        if (xk < obs.getX()) { /// ORIGINAL
                             f_est = f_est + 180;
                         }
 
-                        if (yk<obs.getY() && xk>=obs.getX()) {
+                        if (yk < obs.getY() && xk >= obs.getX()) {
                             f_est = 360 - Math.abs(f_est);
                         }
+//                        if (obs.getX() < xk) {
+//                            f_est = f_est + 180;
+//                        }
+//
+//                        if (obs.getY() < yk && obs.getX() >= xk) {
+//                            f_est = 360 - Math.abs(f_est);
+//                        }
+
+
+                        /// TEMP DEV TESTING
+                        //f_est = 2*f_est;
+
 
                         d = obs.getMeas() * 180 / Math.PI;
 
@@ -378,54 +382,54 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
                     double rk = d - f_est;
 
-//                /* '360-0 Conundrum' adjustment */
-//                    if (obs.getObservationType().equals(ObservationType.aoa)) {
-//                        if (innov.getEntry(0) != 0.0) {
-//                            if (nonAoaNextState == null) {
-//                                nonAoaNextState = Xk.add(innov);
-//                            }
-//
-//                            // TODO, this needs to be stateIndex aware. It is creating an effect where innovations are created for the wrong state/target
-//
-//                        /* gradient from obs to prevailing pressure direction */
-//                                // Math.atan((nonAoaNextState.getEntry(stateIndexes[0] + (matrice_size / 2)) - obs.getY()) / (nonAoaNextState.getEntry(stateIndexes[1]) - obs.getX())) * 180 / Math.PI;
-//                                //     stateIndexes[1] + matrice_size/2
-//                            //double pressure_angle = Math.atan((nonAoaNextState.getEntry(2) - obs.getY()) / (nonAoaNextState.getEntry(0) - obs.getX())) * 180 / Math.PI;
-//                            double pressure_angle = Math.atan((nonAoaNextState.getEntry(stateIndexes[0] + (matrice_size / 2)) - obs.getY()) / (nonAoaNextState.getEntry(stateIndexes[1]) - obs.getX())) * 180 / Math.PI;
-//                            /// /log.debug("P-ang: "+pressure_angle+", f_est: "+f_est+", Yp: "+innov.getEntry(3)+", Pressure: "+nonAoaNextState+", INNOV: "+innov);
-//                            if (nonAoaNextState.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                pressure_angle = pressure_angle + 180;
-//                            }
-//
-//                            if (nonAoaNextState.getEntry(stateIndexes[1]) < obs.getY() && nonAoaNextState.getEntry(stateIndexes[0]) >= obs.getX()) {
-//                                pressure_angle = 360 - Math.abs(pressure_angle);
-//                            }
-//                            //log.debug("P-ang (adjusted): "+pressure_angle);
-//
-//
-//                            if (Math.abs(pressure_angle) > Math.abs(f_est)) {
-//                                if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
-//                                    rk = Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                    rk = -Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                    rk = Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
-//                                    rk = -Math.abs(rk);
-//                                }
-//                            } else {
-//                                if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
-//                                    rk = -Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                    rk = Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                    rk = -Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
-//                                    rk = Math.abs(rk);
-//                                }
-//                            }
-//                        }
-//                    }
+                /* '360-0 Conundrum' adjustment */
+                    if (obs.getObservationType().equals(ObservationType.aoa)) {
+                        if (innov.getEntry(0) != 0.0) {
+                            if (nonAoaNextState == null) {
+                                nonAoaNextState = Xk.add(innov);
+                            }
+
+                            // TODO, this needs to be stateIndex aware. It is creating an effect where innovations are created for the wrong state/target
+
+                        /* gradient from obs to prevailing pressure direction */
+                                // Math.atan((nonAoaNextState.getEntry(stateIndexes[0] + (matrice_size / 2)) - obs.getY()) / (nonAoaNextState.getEntry(stateIndexes[1]) - obs.getX())) * 180 / Math.PI;
+                                //     stateIndexes[1] + matrice_size/2
+                            //double pressure_angle = Math.atan((nonAoaNextState.getEntry(2) - obs.getY()) / (nonAoaNextState.getEntry(0) - obs.getX())) * 180 / Math.PI;
+                            double pressure_angle = Math.atan((nonAoaNextState.getEntry(stateIndexes[0] + (matrice_size / 2)) - obs.getY()) / (nonAoaNextState.getEntry(stateIndexes[1]) - obs.getX())) * 180 / Math.PI;
+                            /// /log.debug("P-ang: "+pressure_angle+", f_est: "+f_est+", Yp: "+innov.getEntry(3)+", Pressure: "+nonAoaNextState+", INNOV: "+innov);
+                            if (nonAoaNextState.getEntry(stateIndexes[0]) < obs.getX()) {
+                                pressure_angle = pressure_angle + 180;
+                            }
+
+                            if (nonAoaNextState.getEntry(stateIndexes[1]) < obs.getY() && nonAoaNextState.getEntry(stateIndexes[0]) >= obs.getX()) {
+                                pressure_angle = 360 - Math.abs(pressure_angle);
+                            }
+                            //log.debug("P-ang (adjusted): "+pressure_angle);
+
+
+                            if (Math.abs(pressure_angle) > Math.abs(f_est)) {
+                                if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
+                                    rk = Math.abs(rk);
+                                } else if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
+                                    rk = -Math.abs(rk);
+                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
+                                    rk = Math.abs(rk);
+                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
+                                    rk = -Math.abs(rk);
+                                }
+                            } else {
+                                if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
+                                    rk = -Math.abs(rk);
+                                } else if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
+                                    rk = Math.abs(rk);
+                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
+                                    rk = -Math.abs(rk);
+                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
+                                    rk = Math.abs(rk);
+                                }
+                            }
+                        }
+                    }
 
                     double[] HXk = H.operate(Xk).toArray();
                     RealVector innov_ = K.scalarMultiply(rk - HXk[0]).getColumnVector(0);
@@ -446,7 +450,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                     filterStateExportCounter++;
                     if (filterStateExportCounter == 10) {
                         // Only if it is changing significantly
-                        double residual = Math.abs(innov.getEntry(0)) + Math.abs(innov.getEntry(1));
+                        double residual = Math.abs(innov.getEntry(2)) + Math.abs(innov.getEntry(3));
                         if (residual > 0.5) {
                             filterStateDTO.setFilterObservationDTOs(filterObservationDTOs);
                             filterStateDTO.setXk(Xk);
@@ -469,19 +473,16 @@ public class ComputeProcessor implements Callable<ComputeResults> {
             if ((Calendar.getInstance().getTimeInMillis() - startTime) > this.geoMission.getDispatchResultsPeriod()) {
 
 
-//                /* Check convergence of all targets */
-//                boolean allTargetsConverged = true;
-//                for (Target target : this.geoMission.getTargets().values()) {
-                // REMOVED FOR SNET
-
-                Target target = this.geoMission.getTarget();
+                /* Check convergence of all targets */
+                boolean allTargetsConverged = true;
+                for (Target target : this.geoMission.getTargets().values()) {
 
                     Integer[] stateIndexes = stateIndexMap.get(target.getId());
 
                     /* A measure of residual changes the filter intends to make - using delta_x/y innovation data */
-                    //double residual = Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size / 2))) + Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size / 2)));
-                double residual = Math.abs((innov.getEntry(0) + innov.getEntry(1)));
-                log.trace("Residual, for target: [" + target.getId() + "]: " + residual);
+                    double residual = Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size / 2))) + Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size / 2)));
+                    log.trace("Residual, for target: [" + target.getId() + "]: " + residual);
+
 
                     /// NOTE: if residual threshold not met here, will be stuck in loop
 
@@ -545,10 +546,9 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                                     running.set(false);
                                     break;
 
+                                } else {
+                                    allTargetsConverged = false;
                                 }
-//                                else {
-//                                    allTargetsConverged = false;
-//                                }
                             }
                         } else {
                             log.debug("This is a Tracking mode run, using latest observations (as held in staging) and continuing...");
@@ -559,14 +559,14 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                         }
                     } else {
                         log.trace("Residual not low enough to export result: " + residual);
-                        //allTargetsConverged = false;
+                        allTargetsConverged = false;
                     }
-//                }
-//                if (allTargetsConverged && geoMission.getMissionMode().equals(MissionMode.fix)) {
-//                    log.debug("Exiting since this is a FIX Mode run and all targets in the filter have converged to threshold");
-//                    running.set(false);
-//                    break;
-//                }
+                }
+                if (allTargetsConverged && geoMission.getMissionMode().equals(MissionMode.fix)) {
+                    log.debug("Exiting since this is a FIX Mode run and all targets in the filter have converged to threshold");
+                    running.set(false);
+                    break;
+                }
             }
 
         }
@@ -584,36 +584,17 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
     public RealMatrix recalculateH(double x_rssi, double y_rssi, double Xk1, double Xk2) {
 
-//        double R1 = Math.sqrt(Math.pow((x_rssi-Xk1),2) + Math.pow(y_rssi-Xk2,2));
-//
-//        double dfdx = -(x_rssi-Xk1)/R1;
-//        double dfdy = -(y_rssi-Xk2)/R1;
-//
-//        double[][] jacobianData = {{0, 0, dfdx, dfdy}};
-//        RealMatrix H = new Array2DRowRealMatrix(jacobianData);
-//        return H;
-
         double R1 = Math.sqrt(Math.pow((x_rssi-Xk1),2) + Math.pow(y_rssi-Xk2,2));
 
         double dfdx = -(x_rssi-Xk1)/R1;
         double dfdy = -(y_rssi-Xk2)/R1;
 
-        double[][] jacobianData = {{dfdx, dfdy}};
+        double[][] jacobianData = {{0, 0, dfdx, dfdy}};
         RealMatrix H = new Array2DRowRealMatrix(jacobianData);
         return H;
     }
 
     public RealMatrix recalculateH_TDOA(double x, double y, double x2, double y2, double Xk1, double Xk2) {
-
-//        double R1 = Math.sqrt(Math.pow((x-Xk1),2) + Math.pow(y-Xk2,2));
-//        double R2 = Math.sqrt(Math.pow((x2-Xk1),2) + Math.pow(y2-Xk2,2));
-//
-//        double dfdx = (-x+Xk1)/R1 - (-x2+Xk1)/R2;
-//        double dfdy = (-y+Xk2)/R1 - (-y2+Xk2)/R2;
-//
-//        double[][] jacobianData = {{0, 0, dfdx, dfdy}};
-//        RealMatrix H = new Array2DRowRealMatrix(jacobianData);
-//        return H;
 
         double R1 = Math.sqrt(Math.pow((x-Xk1),2) + Math.pow(y-Xk2,2));
         double R2 = Math.sqrt(Math.pow((x2-Xk1),2) + Math.pow(y2-Xk2,2));
@@ -621,28 +602,19 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         double dfdx = (-x+Xk1)/R1 - (-x2+Xk1)/R2;
         double dfdy = (-y+Xk2)/R1 - (-y2+Xk2)/R2;
 
-        double[][] jacobianData = {{dfdx, dfdy}};
+        double[][] jacobianData = {{0, 0, dfdx, dfdy}};
         RealMatrix H = new Array2DRowRealMatrix(jacobianData);
         return H;
     }
 
     public RealMatrix recalculateH_AOA(double x, double y, double Xk1, double Xk2) {
 
-//        double R1 = Math.sqrt(Math.pow((x-Xk1),2) + Math.pow((y-Xk2),2)); // Note: better performance using sqrt
-//
-//        double dfdx = (y-Xk2)/R1;  // Note d/d"x" = "y - y_est"/..... on purpose linearisation
-//        double dfdy = -(x-Xk1)/R1;
-//
-//        double[][] jacobianData = {{0, 0, dfdx, dfdy}};
-//        RealMatrix H = new Array2DRowRealMatrix(jacobianData);
-//        return H;
-
         double R1 = Math.sqrt(Math.pow((x-Xk1),2) + Math.pow((y-Xk2),2)); // Note: better performance using sqrt
 
         double dfdx = (y-Xk2)/R1;  // Note d/d"x" = "y - y_est"/..... on purpose linearisation
         double dfdy = -(x-Xk1)/R1;
 
-        double[][] jacobianData = {{dfdx, dfdy}};
+        double[][] jacobianData = {{0, 0, dfdx, dfdy}};
         RealMatrix H = new Array2DRowRealMatrix(jacobianData);
         return H;
     }
@@ -685,60 +657,41 @@ public class ComputeProcessor implements Callable<ComputeResults> {
     public void dispatchResult(RealVector Xk) {
 
         //log.debug("State: "+Xk.getEntry(0)+","+Xk.getEntry(1));
-        //log.debug("Dispatching result for # targets: "+this.geoMission.getTargets().size());
-        //for (Target target : this.geoMission.getTargets().values()) {
-        //REMOVED FOR SNET
+        log.debug("Dispatching result for # targets: "+this.geoMission.getTargets().size());
 
-        Target target = this.geoMission.getTarget();
+        for (Target target : this.geoMission.getTargets().values()) {
             log.debug("Dispatching result for target: "+target.getId());
 
             // Get StateIndexes for each target
-            //Integer[] indexes = stateIndexMap.get(target.getId());
-            // REMOVED MULTITARGET for SNET
+            Integer[] indexes = stateIndexMap.get(target.getId());
 
-            double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(0), Xk.getEntry(1), this.geoMission.getLatZone(), this.geoMission.getLonZone());
+            double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(indexes[0]), Xk.getEntry(indexes[1]), this.geoMission.getLatZone(), this.geoMission.getLonZone());
 
-//            log.debug("Geomission targets size: "+this.geoMission.getTargets().size());
-//            this.geoMission.getTargets().get(target.getId()).setCurrent_loc(latLon);
-        // REMOVED MULTITARGET for SNET
-
-            this.geoMission.getTarget().setCurrent_loc(latLon);
+            log.debug("Geomission targets size: "+this.geoMission.getTargets().size());
+            this.geoMission.getTargets().get(target.getId()).setCurrent_loc(latLon);
 
             /* Compute probability ELP */
-//                double[][] covMatrix = new double[][]{{Pk.getEntry(0, 0), Pk.getEntry(0, 1)}, {Pk.getEntry(1, 0), Pk.getEntry(1, 1)}};
-//                log.debug("Pk: " + Pk);
-//                double[] evalues = Helpers.getEigenvalues(covMatrix);
-//                double largestEvalue = Math.max(evalues[0], evalues[1]);
-//                double smallestEvalue = Math.min(evalues[0], evalues[1]);
-//                log.debug("Large e-value: " + largestEvalue + ", Smallest e-value: " + smallestEvalue);
-//                double[] evector = Helpers.getEigenvector(covMatrix, largestEvalue);
-//                double rot = Math.atan(evector[1] / evector[0]);
-//                double major = 2 * Math.sqrt(9.210 * largestEvalue); // 5.991 equiv 95% C.I, 4.605 equiv 90% C.I, 9.210 equiv 99% C.I
-//                double minor = 2 * Math.sqrt(9.210 * smallestEvalue);
-//                this.geoMission.getTargets().get(target.getId()).setElp_major(major);
-//                this.geoMission.getTargets().get(target.getId()).setElp_minor(minor);
-//                this.geoMission.getTargets().get(target.getId()).setElp_rot(rot);
-
-            double[][] covMatrix=new double[][]{{Pk.getEntry(0,0),Pk.getEntry(0,1)},{Pk.getEntry(1,0),Pk.getEntry(1,1)}};
+            double[][] covMatrix = new double[][]{{Pk.getEntry(0, 0), Pk.getEntry(0, 1)}, {Pk.getEntry(1, 0), Pk.getEntry(1, 1)}};
+            log.debug("Pk: " + Pk);
             double[] evalues = Helpers.getEigenvalues(covMatrix);
-            double largestEvalue = Math.max(evalues[0],evalues[1]);
-            double smallestEvalue = Math.min(evalues[0],evalues[1]);
+            double largestEvalue = Math.max(evalues[0], evalues[1]);
+            double smallestEvalue = Math.min(evalues[0], evalues[1]);
+            log.debug("Large e-value: " + largestEvalue + ", Smallest e-value: " + smallestEvalue);
             double[] evector = Helpers.getEigenvector(covMatrix, largestEvalue);
             double rot = Math.atan(evector[1] / evector[0]);
-            /* This angle is between -pi -> pi, adjust 0->2pi */
-            if (rot<0)
-                rot = rot + 2*Math.PI;
-            /* Ch-square distribution for two degrees freedom: 1.39 equiv 50% (i.e. CEP), 5.991 equiv 95% C.I, 4.605 equiv 90% C.I, 9.210 equiv 99% C.I */
-            double half_major_axis_length = Math.sqrt(largestEvalue)*1.39; // Orig used: 2*Math.sqrt(9.210*largestEvalue);
-            double half_minor_axis_length = Math.sqrt(smallestEvalue)*1.39;
+            double major = 2 * Math.sqrt(9.210 * largestEvalue); // 5.991 equiv 95% C.I, 4.605 equiv 90% C.I, 9.210 equiv 99% C.I
+            double minor = 2 * Math.sqrt(9.210 * smallestEvalue);
+            this.geoMission.getTargets().get(target.getId()).setElp_major(major);
+            this.geoMission.getTargets().get(target.getId()).setElp_minor(minor);
+            this.geoMission.getTargets().get(target.getId()).setElp_rot(rot);
 
-            this.efusionListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], half_major_axis_length*10000, half_minor_axis_length*10000, rot);
+            this.efusionListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot);
 
             // TODO, load up a state buffer in the process manager????
             //    THIS doesn't work, different GM object
             //this.geoMission.getResultBuffer().put(target.getId(), new GeoResult(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot));
-            this.internalListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], half_major_axis_length*10000, half_minor_axis_length*10000, rot);
-        //}
+            this.internalListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot);
+        }
 
 
         if (this.geoMission.getOutputFilterState() && kmlFileHelpers !=null) {

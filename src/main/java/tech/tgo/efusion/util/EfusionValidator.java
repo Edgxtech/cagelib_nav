@@ -108,13 +108,17 @@ public class EfusionValidator {
 
     public static void validateTargets(Collection<Target> targets) throws Exception {
         for (Target target : targets) {
-            log.debug("Validating tgt: " + target.getId());
-            if (target.getId()==null) {
-                throw new ConfigurationException("Target description has no Id");
-            }
-            if (target.getName()==null) {
-                throw new ConfigurationException("Target description for target [" + target.getId() + "] has no name");
-            }
+            validateTarget(target);
+        }
+    }
+
+    public static void validateTarget(Target target) throws Exception {
+        log.debug("Validating tgt: " + target.getId());
+        if (target.getId()==null) {
+            throw new ConfigurationException("Target description has no Id");
+        }
+        if (target.getName()==null) {
+            throw new ConfigurationException("Target description for target [" + target.getId() + "] has no name");
         }
     }
 }

@@ -1,8 +1,10 @@
 package tech.tgo.efusion;
 
+import org.apache.commons.math3.linear.RealVector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.tgo.efusion.compute.ComputeProcessor;
+import tech.tgo.efusion.compute.ComputeResults;
 import tech.tgo.efusion.model.*;
 import tech.tgo.efusion.util.ConfigurationException;
 import tech.tgo.efusion.util.EfusionValidator;
@@ -12,6 +14,8 @@ import uk.me.jstott.jcoord.LatLng;
 import uk.me.jstott.jcoord.UTMRef;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
 /**
  * Geolocation fusion and tracking, using custom extended kalman filter implementation
@@ -69,8 +73,9 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
     }
 
     public void addObservation(Observation obs) throws Exception {
-        log.debug("Validating observation against number of targets: "+this.geoMission.getTargets().size());
-        EfusionValidator.validate(obs, this.geoMission.getTargets().keySet());
+        //log.debug("Validating observation against number of targets: "+this.geoMission.getTargets().size());
+        //EfusionValidator.validate(obs, this.geoMission.getTargets().keySet());
+        // NOT NEEDED SNET
         EfusionValidator.validate(obs);
 
         /* Set previous measurement here, if this is a repeated measurement */
@@ -209,7 +214,7 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
 
     /* For Tracker - start process and continually add new observations (one per asset), monitor result in result() callback */
     /* For Fixer - add observations (one per asset) then start, monitor output in result() callback */
-    public Thread start() throws Exception {
+    public ComputeResults start() throws Exception {
         Iterator it = this.geoMission.observations.values().iterator();
         if (!it.hasNext() && this.geoMission.getMissionMode().equals(MissionMode.fix)) {
             throw new ConfigurationException("There were no observations, couldn't start the process");
@@ -217,17 +222,51 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
 
 
         // TODO, Change this to Callable/Future Task ???
+        //
+        //     i.e. instead of implements runnable, implements Callable<RealVector>   (i.e. to return Xk matrix)
+        // class CallableTask implements Callable<String>
+        //  @Override
+//        public String call() throws Exception {
+//            System.out.println("Executing call() !!!");
+//            return "success";
+//        }
+        //
+        // REPLACE: computeProc = new ComputeProc...
+        // WITH:
+        // FutureTask<RealVector> computeProc = new FutureTask<>(new ComputeProcessor());
+//        computeProc.run();
+//        try {
+//            RealVector result = future.get();
+//            System.out.println("Result="+result);
+//        } catch (InterruptedException | ExecutionException e) {
+//            System.out.println("EXCEPTION!!!");
+//            e.printStackTrace();
+//        }
 
         computeProcessor = new ComputeProcessor(this.actionListener, this, this.geoMission.observations, this.geoMission);
+        FutureTask<ComputeResults> future = new FutureTask<ComputeResults>(computeProcessor);
+        future.run();
 
-        Thread thread = new Thread(computeProcessor);
-        thread.start();
-
-        return thread;
+        try {
+            ComputeResults results = future.get();
+            log.debug("Result: "+results.toString());
+            return results;
+        } catch (InterruptedException | ExecutionException e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public GeoMission getGeoMission() {
         return geoMission;
+    }
+
+    /* ADDED for SNET, configured for single target */
+    public void reconfigureTarget(Target target) throws Exception {
+        this.geoMission.setTarget(target);
+
+        EfusionValidator.validateTarget(target);
     }
 
     // TEMPORARY hold - may need to also reinitialise the state matrices based on number of targets
@@ -403,5 +442,12 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
     public void result(String geoId, String target_id, double lat, double lon, double cep_elp_maj, double cep_elp_min, double cep_elp_rot) {
         log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+geoId+", TargetId: "+target_id+", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot);
         this.resultBuffer.put(target_id, new GeoResult(geoId,target_id,lat,lon,cep_elp_maj,cep_elp_min,cep_elp_rot));
+    }
+
+    @Override
+    public void result(ComputeResults computeResults) {
+        log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+computeResults.getGeoId()+", Lat: "+computeResults.getGeolocationResult().getLat()+", Lon: "+computeResults.getGeolocationResult().getLon()+", CEP major: "+computeResults.getGeolocationResult().getElp_long()+", CEP minor: "+computeResults.getGeolocationResult().getElp_short()+", CEP rotation: "+computeResults.getGeolocationResult().getElp_rot());
+        log.warn("WARNING, not adding to results buffer in Process Manager REVISIT LATER");
+        //this.resultBuffer.put(target_id, new GeoResult(geoId,target_id,lat,lon,cep_elp_maj,cep_elp_min,cep_elp_rot));
     }
 }

@@ -172,8 +172,12 @@ public class KmlFileStaticHelpers {
     public static void exportTargetEstimationResult(Document doc, Element dnode, GeoMission geoMission) {
         try
         {
-            log.debug("Exporting # targets estimated posn: "+geoMission.getTargets().size());
-            for (Target target : geoMission.getTargets().values()) {
+//            log.debug("Exporting # targets estimated posn: "+geoMission.getTargets().size());
+//            for (Target target : geoMission.getTargets().values()) {
+            // REMOVED MULTI TGT FOR SNET
+
+            Target target = geoMission.getTarget();
+
                 Element crosshairStyle = doc.createElement("Style");
                 crosshairStyle.setAttribute("id", "crosshairStyle");
 
@@ -213,7 +217,7 @@ public class KmlFileStaticHelpers {
                 PFpoint.appendChild(coordinates);
 
                 PFplacemark.appendChild(PFpoint);
-            }
+            //}
         }
         catch(Exception egeo){
             log.trace("error exporting geo position to kml");
@@ -225,7 +229,9 @@ public class KmlFileStaticHelpers {
         try {
             try
             {
-                for (Target target : geoMission.getTargets().values()) {
+                //for (Target target : geoMission.getTargets().values()) {
+
+                Target target = geoMission.getTarget();
                     List<double[]> geometryCoords = new ArrayList<double[]>();
 
                     double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEasting(target.getCurrent_loc()[0], target.getCurrent_loc()[1]);
@@ -287,7 +293,7 @@ public class KmlFileStaticHelpers {
                     polygon.appendChild(outer);
 
                     polyPlacemark.appendChild(polygon);
-                }
+
             }
             catch(Exception ecep){log.trace("error exporting cep circle to kml"); ecep.printStackTrace();}
         } catch (Exception e) {
