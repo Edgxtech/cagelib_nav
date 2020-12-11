@@ -48,8 +48,8 @@ public class SimulatedTargetObserver extends TimerTask {
             log.debug("Moving Observer, moved target: "+testTarget.getId()+", to: " + testTarget.getTrue_lat() + "," + testTarget.getTrue_lon());
 
             // update GeoMission::Target::TrueLocation
-            // TODO, not sure why this is here, I believe just for plotting and engineering purposes.
-            //efusionProcessManager.getGeoMission().getTargets().get(testTarget.getId()).setTrue_current_loc(new Double[]{testTarget.getTrue_lat(), testTarget.getTrue_lon()});
+            // Just for plotting and engineering purposes.
+            efusionProcessManager.getGeoMission().getTarget().setTrue_current_loc(new Double[]{testTarget.getTrue_lat(), testTarget.getTrue_lon()});
         }
 
 

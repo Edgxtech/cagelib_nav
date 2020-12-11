@@ -16,10 +16,10 @@ public class Observation {
     /* Asset lon */
     double lon;
 
-    /* Asset UTM Easting */
+    /* Asset UTM Easting - CHANGED MEANING in NAV, this means the tower location */
     double x;
 
-    /* Asset UTM Northing */
+    /* Asset UTM Northing - CHANGED MEANING in NAV, this means the tower location */
     double y;
 
     /* UTM reference zones */

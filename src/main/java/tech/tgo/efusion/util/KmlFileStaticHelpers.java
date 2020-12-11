@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
+import tech.tgo.efusion.compute.GeolocationResult;
 import tech.tgo.efusion.model.Asset;
 import tech.tgo.efusion.model.GeoMission;
 import tech.tgo.efusion.model.Target;
@@ -95,7 +96,7 @@ public class KmlFileStaticHelpers {
             /* PLOT the geo probability ELP result */
             if (geoMission.getShowCEPs())
             {
-                exportTargetEstimationCEP(doc,dnode,geoMission);
+                exportTargetEstimationCEP(doc,dnode,geoMission, geoMission.getComputeResults().getGeolocationResult(),true);
             }
 
             /* PLOT the true target loc - for experiment purposes */
@@ -112,12 +113,15 @@ public class KmlFileStaticHelpers {
         }
         catch (Exception e)
         {
-            log.error(e.getMessage());}
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public static void exportTargetTrueLocation(Document doc, Element dnode, GeoMission geoMission) {
         try {
-            for (Target target : geoMission.getTargets().values()) {
+            //for (Target target : geoMission.getTargets().values()) {
+            Target target = geoMission.getTarget();
                 if (target.getTrue_current_loc() != null) {
                     Element crosshairStyle = doc.createElement("Style");
                     crosshairStyle.setAttribute("id", "crosshairStyle");
@@ -163,9 +167,10 @@ public class KmlFileStaticHelpers {
                 } else {
                     log.debug("Attempted to export true location however none was available");
                 }
-            }
+
         } catch (Exception e) {
             log.error("Error exporting true location: " + e.toString());
+            e.printStackTrace();
         }
     }
 
@@ -225,74 +230,160 @@ public class KmlFileStaticHelpers {
         }
     }
 
-    public static void exportTargetEstimationCEP(Document doc, Element dnode, GeoMission geoMission) {
+    public static void exportTargetEstimationCEP(Document doc, Element dnode, GeoMission geoMission, GeolocationResult geolocationResult, boolean highlight) {
         try {
             try
             {
+                log.debug("Exporting CEP point");
                 //for (Target target : geoMission.getTargets().values()) {
 
-                Target target = geoMission.getTarget();
-                    List<double[]> geometryCoords = new ArrayList<double[]>();
+//                Target target = geoMission.getTarget();
+//                    List<double[]> geometryCoords = new ArrayList<double[]>();
+//
+//                    double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEasting(target.getCurrent_loc()[0], target.getCurrent_loc()[1]);
+//                    log.debug("UTM Target Loc: " + utm_target_loc[0] + ", " + utm_target_loc[1]);
+//
+//                    double[][] M_rot = new double[][]{{Math.cos(target.getElp_rot()), -Math.sin(target.getElp_rot())}, {Math.cos(target.getElp_rot()), Math.sin(target.getElp_rot())}};
+//
+//                    for (double theta = (1 / 2) * Math.PI; theta <= (5 / 2) * Math.PI; theta += 0.2) {
+//                        double a = target.getElp_major() * Math.cos(theta);
+//                        double b = target.getElp_minor() * Math.sin(theta);
+//
+//                        double x = M_rot[0][0] * (a) + M_rot[0][1] * (b);
+//                        double y = M_rot[1][0] * (a) + M_rot[1][1] * (b);
+//
+//                        UTMRef utmMeas = new UTMRef(x + utm_target_loc[1], y + utm_target_loc[0], geoMission.getLatZone(), geoMission.getLonZone());
+//                        LatLng ltln = utmMeas.toLatLng();
+//                        double[] measPoint = {ltln.getLat(), ltln.getLng()};
+//                        geometryCoords.add(measPoint);
+//                    }
+                List<double[]> geometryCoords = new ArrayList<double[]>();
 
-                    double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEasting(target.getCurrent_loc()[0], target.getCurrent_loc()[1]);
-                    log.debug("UTM Target Loc: " + utm_target_loc[0] + ", " + utm_target_loc[1]);
+                double lat = geolocationResult.getLat();
+                double lon = geolocationResult.getLon();
+                double elp_long = geolocationResult.getElp_long();
+                double elp_short = geolocationResult.getElp_short();
+                double elp_rot = geolocationResult.getElp_rot();
 
-                    double[][] M_rot = new double[][]{{Math.cos(target.getElp_rot()), -Math.sin(target.getElp_rot())}, {Math.cos(target.getElp_rot()), Math.sin(target.getElp_rot())}};
+                //double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEasting(geoMission.getTarget().getCurrent_loc()[0], geoMission.getTarget().getCurrent_loc()[1]);
+                double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEasting(lat, lon);
+                log.debug("UTM Target Loc: "+utm_target_loc[0]+", "+utm_target_loc[1]);
 
-                    for (double theta = (1 / 2) * Math.PI; theta <= (5 / 2) * Math.PI; theta += 0.2) {
-                        double a = target.getElp_major() * Math.cos(theta);
-                        double b = target.getElp_minor() * Math.sin(theta);
+                // temp swapped bottom row to cos,sin
+                //double[][] M_rot = new double[][]{{Math.cos(geoMission.getTarget().getElp_rot()), -Math.sin(geoMission.getTarget().getElp_rot())}, {Math.sin(geoMission.getTarget().getElp_rot()), Math.cos(geoMission.getTarget().getElp_rot())}};
+                double[][] M_rot = new double[][]{{Math.cos(elp_rot), -Math.sin(elp_rot)}, {Math.sin(elp_rot), Math.cos(elp_rot)}};
 
-                        double x = M_rot[0][0] * (a) + M_rot[0][1] * (b);
-                        double y = M_rot[1][0] * (a) + M_rot[1][1] * (b);
+                for (double theta = (1 / 2) * Math.PI; theta <= (5 / 2) * Math.PI; theta += 0.2) {
+                    double a = elp_long * Math.cos(theta);
+                    double b = elp_short * Math.sin(theta);
 
-                        UTMRef utmMeas = new UTMRef(x + utm_target_loc[1], y + utm_target_loc[0], geoMission.getLatZone(), geoMission.getLonZone());
-                        LatLng ltln = utmMeas.toLatLng();
-                        double[] measPoint = {ltln.getLat(), ltln.getLng()};
-                        geometryCoords.add(measPoint);
-                    }
+                    double x = M_rot[0][0] * (a) + M_rot[0][1] * (b);
+                    double y = M_rot[1][0] * (a) + M_rot[1][1] * (b);
 
-                    Element style = doc.createElement("Style");
-                    style.setAttribute("id", "cepStyle");
+                    UTMRef utmMeas = new UTMRef(x + utm_target_loc[1], y + utm_target_loc[0], geoMission.getLatZone(), geoMission.getLonZone());
+                    LatLng ltln = utmMeas.toLatLng();
+                    double[] measPoint = {ltln.getLat(), ltln.getLng()};
+                    geometryCoords.add(measPoint);
+                }
 
-                    Element polyStyle = doc.createElement("PolyStyle");
-                    Element color = doc.createElement("color");
+                Element style = doc.createElement("Style");
+                style.setAttribute("id", "cepStyle");
+
+                Element polyStyle = doc.createElement("PolyStyle");
+                Element color = doc.createElement("color");
+
+                if (highlight) {
                     color.appendChild(doc.createTextNode("3f2002e4"));
+                }
+                else {
+                    color.appendChild(doc.createTextNode("501478C8"));
+                }
 
-                    polyStyle.appendChild(color);
-                    style.appendChild(polyStyle);
+                polyStyle.appendChild(color);
+                style.appendChild(polyStyle);
 
-                    dnode.appendChild(style);
-                    Element polyPlacemark = doc.createElement("Placemark");
-                    dnode.appendChild(polyPlacemark);
+                dnode.appendChild(style);
+                Element polyPlacemark = doc.createElement("Placemark");
+                dnode.appendChild(polyPlacemark);
 
-                    Element name = doc.createElement("name");
-                    name.appendChild(doc.createTextNode(target.getId() + ":cep"));
-                    polyPlacemark.appendChild(name);
+                Element name = doc.createElement("name");
+                name.appendChild(doc.createTextNode(geoMission.getTarget().getId()+":cep"));
+                polyPlacemark.appendChild(name);
 
-                    Element styleUrl = doc.createElement("styleUrl");
-                    styleUrl.appendChild(doc.createTextNode("#cepStyle"));
+                Element styleUrl = doc.createElement("styleUrl");
+                styleUrl.appendChild(doc.createTextNode("#cepStyle"));
 
-                    polyPlacemark.appendChild(styleUrl);
+                polyPlacemark.appendChild(styleUrl);
 
-                    Element polygon = doc.createElement("Polygon");
+                Element polygon = doc.createElement("Polygon");
 
-                    Element outer = doc.createElement("outerBoundaryIs");
-                    Element cepOuterRing = doc.createElement("LinearRing");
-                    Element cepCircleCoords = doc.createElement("coordinates");
+                Element altitudeMode = doc.createElement("altitudeMode");
+                altitudeMode.appendChild(doc.createTextNode("relativeToGround"));
+                polygon.appendChild(altitudeMode);
 
-                    Iterator circlePoints = geometryCoords.iterator();
-                    while (circlePoints.hasNext()) {
-                        double[] point = (double[]) circlePoints.next();
+//                Element extrude = doc.createElement("extrude");
+//                extrude.appendChild(doc.createTextNode("1"));
+//                polygon.appendChild(extrude);
 
-                        cepCircleCoords.appendChild(doc.createTextNode(point[1] + "," + point[0] + ",0 \n"));
-                    }
-                    cepOuterRing.appendChild(cepCircleCoords);
+                Element outer = doc.createElement("outerBoundaryIs");
+                Element cepOuterRing = doc.createElement("LinearRing");
+                Element cepCircleCoords = doc.createElement("coordinates");
 
-                    outer.appendChild(cepOuterRing);
-                    polygon.appendChild(outer);
+                Iterator circlePoints = geometryCoords.iterator();
+                while (circlePoints.hasNext())
+                {
+                    double[] point = (double[])circlePoints.next();
+                    log.debug("ceppoint: "+point[0]+","+point[1]);
 
-                    polyPlacemark.appendChild(polygon);
+                    cepCircleCoords.appendChild(doc.createTextNode(point[1]+","+point[0]+",200 \n"));
+                }
+                cepOuterRing.appendChild(cepCircleCoords);
+
+                outer.appendChild(cepOuterRing);
+                polygon.appendChild(outer);
+
+                polyPlacemark.appendChild(polygon);
+//                    Element style = doc.createElement("Style");
+//                    style.setAttribute("id", "cepStyle");
+//
+//                    Element polyStyle = doc.createElement("PolyStyle");
+//                    Element color = doc.createElement("color");
+//                    color.appendChild(doc.createTextNode("3f2002e4"));
+//
+//                    polyStyle.appendChild(color);
+//                    style.appendChild(polyStyle);
+//
+//                    dnode.appendChild(style);
+//                    Element polyPlacemark = doc.createElement("Placemark");
+//                    dnode.appendChild(polyPlacemark);
+//
+//                    Element name = doc.createElement("name");
+//                    name.appendChild(doc.createTextNode(target.getId() + ":cep"));
+//                    polyPlacemark.appendChild(name);
+//
+//                    Element styleUrl = doc.createElement("styleUrl");
+//                    styleUrl.appendChild(doc.createTextNode("#cepStyle"));
+//
+//                    polyPlacemark.appendChild(styleUrl);
+//
+//                    Element polygon = doc.createElement("Polygon");
+//
+//                    Element outer = doc.createElement("outerBoundaryIs");
+//                    Element cepOuterRing = doc.createElement("LinearRing");
+//                    Element cepCircleCoords = doc.createElement("coordinates");
+//
+//                    Iterator circlePoints = geometryCoords.iterator();
+//                    while (circlePoints.hasNext()) {
+//                        double[] point = (double[]) circlePoints.next();
+//
+//                        cepCircleCoords.appendChild(doc.createTextNode(point[1] + "," + point[0] + ",0 \n"));
+//                    }
+//                    cepOuterRing.appendChild(cepCircleCoords);
+//
+//                    outer.appendChild(cepOuterRing);
+//                    polygon.appendChild(outer);
+//
+//                    polyPlacemark.appendChild(polygon);
 
             }
             catch(Exception ecep){log.trace("error exporting cep circle to kml"); ecep.printStackTrace();}

@@ -43,6 +43,7 @@ public class Helpers {
         System.out.println("e1: "+e1+", e2: "+e2);
         return new double[]{e1,e2};
     }
+
     public static double[] getEigenvector(double[][] matrix, double eigenvalue) {
         double a = matrix[0][0];
         double b = matrix[0][1];

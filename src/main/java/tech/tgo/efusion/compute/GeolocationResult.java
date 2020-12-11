@@ -76,19 +76,13 @@ public class GeolocationResult {
         this.processed_ok = processed_ok;
     }
 
-//    @Override
-//    public String toString() {
-//        return MoreObjects.toStringHelper(this)
-//                .omitNullValues()
-//                .add("name", name)
-//                .add("nickname", nickname)
-//                .toString();
-//    }
     @Override
     public String toString() {
         return "Residual: " + ((isNull(residual)) ? "" : residual) +
                 ", Lat: " + ((isNull(lat)) ? "" : lat) +
                 ", Lon: " + ((isNull(lon)) ? "" : lon) +
-                ", Elp_Long: " + ((isNull(elp_long)) ? "" : elp_long) ;
+                ", Elp_Long: " + ((isNull(elp_long)) ? "" : elp_long) +
+                ", Elp_Short: " + ((isNull(elp_short)) ? "" : elp_short) +
+                ", Elp_Rot: " + ((isNull(elp_rot)) ? "" : elp_rot) ;
     }
 }
