@@ -23,8 +23,8 @@
         </encoder>
     </appender>
 
-    <logger name="tech.tgo.efusion" level="DEBUG" />
-    <logger name="tech.tgo.efusion.compute.ComputeProcessor" level="DEBUG" />
+    <logger name="tech.tgo.cage" level="DEBUG" />
+    <logger name="tech.tgo.cage.compute.ComputeProcessor" level="DEBUG" />
 
     <root level="DEBUG">
         <appender-ref ref="STDOUT" />
