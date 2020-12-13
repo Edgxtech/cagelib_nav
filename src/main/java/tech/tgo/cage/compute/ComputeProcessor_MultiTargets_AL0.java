@@ -685,12 +685,15 @@ public class ComputeProcessor_MultiTargets_AL0 implements Callable<ComputeResult
             this.geoMission.getTargets().get(target.getId()).setElp_minor(minor);
             this.geoMission.getTargets().get(target.getId()).setElp_rot(rot);
 
-            this.efusionListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot);
+//            this.efusionListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot);
+//
+//            // TODO, load up a state buffer in the process manager????
+//            //    THIS doesn't work, different GM object
+//            //this.geoMission.getResultBuffer().put(target.getId(), new GeoResult(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot));
+//            this.internalListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot);
 
-            // TODO, load up a state buffer in the process manager????
-            //    THIS doesn't work, different GM object
-            //this.geoMission.getResultBuffer().put(target.getId(), new GeoResult(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot));
-            this.internalListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot);
+            //// NOTE: These listeners are required for AL_0 , commented to enable compile
+
         }
 
 

@@ -411,7 +411,9 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                 geoMission.setFilterAOABias(Double.parseDouble(geoMission.getProperties().getProperty("ekf.filter.default.aoa.bias")));
             }
             else {
-                throw new ConfigurationException("No filter aoa bias specified");
+                //throw new ConfigurationException("No filter aoa bias specified");
+                log.debug("No filter aoa bias specified, using none");
+                geoMission.setFilterAOABias(1.0);
             }
         }
 
@@ -421,7 +423,9 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                 geoMission.setFilterTDOABias(Double.parseDouble(geoMission.getProperties().getProperty("ekf.filter.default.tdoa.bias")));
             }
             else {
-                throw new ConfigurationException("No filter tdoa bias specified");
+                //throw new ConfigurationException("No filter tdoa bias specified");
+                log.debug("No filter aoa bias specified, using none");
+                geoMission.setFilterTDOABias(1.0);
             }
         }
 
@@ -431,16 +435,18 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                 geoMission.setFilterRangeBias(Double.parseDouble(geoMission.getProperties().getProperty("ekf.filter.default.range.bias")));
             }
             else {
-                throw new ConfigurationException("No filter range bias specified");
+                //throw new ConfigurationException("No filter range bias specified");
+                log.debug("No filter aoa bias specified, using none");
+                geoMission.setFilterRangeBias(1.0);
             }
         }
     }
 
-    @Override
-    public void result(String geoId, String target_id, double lat, double lon, double cep_elp_maj, double cep_elp_min, double cep_elp_rot) {
-        log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+geoId+", TargetId: "+target_id+", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot);
-        this.resultBuffer.put(target_id, new GeoResult(geoId,target_id,lat,lon,cep_elp_maj,cep_elp_min,cep_elp_rot));
-    }
+//    @Override
+//    public void result(String geoId, String target_id, double lat, double lon, double cep_elp_maj, double cep_elp_min, double cep_elp_rot) {
+//        log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+geoId+", TargetId: "+target_id+", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot);
+//        this.resultBuffer.put(target_id, new GeoResult(geoId,target_id,lat,lon,cep_elp_maj,cep_elp_min,cep_elp_rot));
+//    }
 
     @Override
     public void result(ComputeResults computeResults) {

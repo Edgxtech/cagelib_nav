@@ -166,7 +166,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
     @Override
     public ComputeResults call()
     {
-        log.info("Running for # observations:"+observations.size());
+        log.info("Running for # observations: "+observations.size());
         if (observations.size()==0) {
             log.info("No observations returning");
             return null;
@@ -724,13 +724,15 @@ public class ComputeProcessor implements Callable<ComputeResults> {
             double half_major_axis_length = Math.sqrt(largestEvalue)*1.39; // Orig used: 2*Math.sqrt(9.210*largestEvalue);
             double half_minor_axis_length = Math.sqrt(smallestEvalue)*1.39;
 
-            this.efusionListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], half_major_axis_length*10000, half_minor_axis_length*10000, rot);
+//            this.efusionListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], half_major_axis_length*10000, half_minor_axis_length*10000, rot);
+//
+//            // TODO, load up a state buffer in the process manager????
+//            //    THIS doesn't work, different GM object
+//            //this.geoMission.getResultBuffer().put(target.getId(), new GeoResult(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot));
+//            this.internalListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], half_major_axis_length*10000, half_minor_axis_length*10000, rot);
+//        //}
 
-            // TODO, load up a state buffer in the process manager????
-            //    THIS doesn't work, different GM object
-            //this.geoMission.getResultBuffer().put(target.getId(), new GeoResult(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot));
-            this.internalListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], half_major_axis_length*10000, half_minor_axis_length*10000, rot);
-        //}
+        // NOTE: THESE listener calls required for AL_0
 
 
         if (this.geoMission.getOutputFilterState() && kmlFileHelpers !=null) {
