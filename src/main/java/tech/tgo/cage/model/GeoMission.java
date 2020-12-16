@@ -5,6 +5,8 @@ import tech.tgo.cage.compute.ComputeResults;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Objects.isNull;
+
 /**
  * @author Timothy Edge (timmyedge)
  */
@@ -344,5 +346,27 @@ public class GeoMission {
 
     public void setTarget(Target target) {
         this.target = target;
+    }
+
+    @Override
+    public String toString() {
+        return "Geo Id: " + ((isNull(geoId)) ? "" : geoId) +
+                ", MissionMode: " + ((isNull(missionMode)) ? "" : missionMode.name()) +
+                ", ShowMeas: " + ((isNull(showMeas)) ? "" : showMeas) +
+                ", ShowCEPs: " + ((isNull(showCEPs)) ? "" : showCEPs) +
+                ", ShowGEOs: " + ((isNull(showGEOs)) ? "" : showGEOs) +
+                ", ShowTrueLoc: " + ((isNull(showTrueLoc)) ? "" : showTrueLoc) +
+                ", outputKml: " + ((isNull(outputKml)) ? "" : outputKml) +
+                ", outputKmlFilename: " + ((isNull(outputKmlFilename)) ? "" : outputKmlFilename) +
+                ", outputFilterState: " + ((isNull(outputFilterState)) ? "" : outputFilterState) +
+                ", outputFilterStateKmlFilename: " + ((isNull(outputFilterStateKmlFilename)) ? "" : outputFilterStateKmlFilename) +
+                ", filterUseSpecificInitialCondition: " + ((isNull(filterUseSpecificInitialCondition)) ? "" : filterUseSpecificInitialCondition) +
+                ", outputFilterStateKmlFilename: " + ((isNull(outputFilterStateKmlFilename)) ? "" : outputFilterStateKmlFilename) +
+                ", dispatchResultsPeriod: " + ((isNull(dispatchResultsPeriod)) ? "" : dispatchResultsPeriod) +
+                ", filterThrottle: " + ((isNull(filterThrottle)) ? "" : filterThrottle) +
+                ", filterConvergenceResidualThreshold: " + ((isNull(filterConvergenceResidualThreshold)) ? "" : filterConvergenceResidualThreshold) +
+                ", filterDispatchResidualThreshold: " + ((isNull(filterDispatchResidualThreshold)) ? "" : filterDispatchResidualThreshold) +
+                ", filterMeasurementError: " + ((isNull(filterMeasurementError)) ? "" : filterMeasurementError) +
+                ", filterProcessNoise: " + ((isNull(filterProcessNoise)) ? "" : filterProcessNoise);
     }
 }

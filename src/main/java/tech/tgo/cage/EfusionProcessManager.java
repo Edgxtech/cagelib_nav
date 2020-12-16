@@ -323,15 +323,27 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
     public void configure(GeoMission geoMission) throws Exception {
         this.geoMission = geoMission;
 
+        log.debug("Configuring GeMission: "+geoMission.toString());
+
         EfusionValidator.validate(geoMission);
 
 //        /* Uses defaults - overridden by some implementations (required for pur tdoa processing) */
 //        geoMission.setFilterProcessNoise(new double[][]{{0.01, 0, 0, 0}, {0, 0.01 ,0, 0}, {0, 0, 0.01, 0}, {0, 0, 0 ,0.01}});    -- MOVED IN NAV USE CASE TO SPT DYNAMIC STATE SIZES, MOVED TO setObservations in computeProcessor
 
         Properties properties = new Properties();
-        String appConfigPath = Thread.currentThread().getContextClassLoader().getResource("").getPath() + "application.properties";
+
+        /// THIS DOESNT WORK IN FATJAR - RESULTS IN NULL POINTER
+        //String appConfigPath = Thread.currentThread().getContextClassLoader().getResource("").getPath() + "cage_nav.properties";;
+        //properties.load(new FileInputStream(appConfigPath));
+        // REPLACED WITH THIS
+        InputStream input = EfusionProcessManager.class.getClassLoader().getResourceAsStream("cage_nav.properties");
+
+        if (input == null) {
+            throw new ConfigurationException("Trouble loading common application properties, file was not found");
+        }
+
         try {
-            properties.load(new FileInputStream(appConfigPath));
+            properties.load(input);
             this.geoMission.setProperties(properties);
         }
         catch(IOException ioe) {

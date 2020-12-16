@@ -2,6 +2,8 @@ package tech.tgo.cage.model;
 
 import java.util.List;
 
+import static java.util.Objects.isNull;
+
 /**
  * @author Timothy Edge (timmyedge)
  */
@@ -66,10 +68,6 @@ public class Observation {
     List<double[]> lineGeometry;
 
     Boolean crossed_border;
-
-    public String toString() {
-        return "ID: "+id+", type: "+observationType.name()+", assetId: "+assetId+", targetId: "+targetId+", targetIdB: "+targetId_b+", meas: "+meas;
-    }
 
     public Observation(Long id, String assetId, double lat, double lon) {
         this.id = id;
@@ -254,4 +252,18 @@ public class Observation {
     public void setTargetId(String targetId) {
         this.targetId = targetId;
     }
+
+    @Override
+    public String toString() {
+        return "Id: " + ((isNull(id)) ? "" : id) +
+                ", Lat: " + ((isNull(lat)) ? "" : lat) +
+                ", Lon: " + ((isNull(lon)) ? "" : lon) +
+                ", Meas: " + ((isNull(meas)) ? "" : meas) +
+                ", Asset Id: " + ((isNull(assetId)) ? "" : assetId) +
+                ", Target Id: " + ((isNull(targetId)) ? "" : targetId) ;
+    }
+
+//    public String toString() {
+//        return "ID: "+id+", type: "+observationType.name()+", assetId: "+assetId+", targetId: "+targetId+", targetIdB: "+targetId_b+", meas: "+meas;
+//    }
 }

@@ -1,5 +1,7 @@
 package tech.tgo.cage.model;
 
+import static java.util.Objects.isNull;
+
 /**
  * @author Timothy Edge (timmyedge)
  */
@@ -83,5 +85,13 @@ public class Target {
 
     public void setElp_rot(double elp_rot) {
         this.elp_rot = elp_rot;
+    }
+
+    @Override
+    public String toString() {
+        return "Id: " + ((isNull(id)) ? "" : id) +
+                ", Name: " + ((isNull(name)) ? "" : name) +
+                ", Lat: " + ((isNull(current_loc)) ? "" : current_loc[0]) +
+                ", Lon: " + ((isNull(current_loc)) ? "" : current_loc[1]);
     }
 }
