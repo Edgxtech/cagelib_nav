@@ -14,6 +14,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Geolocation fusion and tracking, using custom extended kalman filter implementation
@@ -246,7 +247,7 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
         future.run();
 
         try {
-            ComputeResults results = future.get();
+            ComputeResults results = future.get(5, TimeUnit.SECONDS);
             log.debug("Result: "+results.toString());
             return results;
         } catch (InterruptedException | ExecutionException e) {

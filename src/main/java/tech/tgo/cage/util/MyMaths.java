@@ -20,4 +20,19 @@ public class MyMaths
     }
 
     // sinh−1x=ln(x+x2+1) - Not used
+
+    public static double getMean(double[] data) {
+        double sum = 0.0;
+        for(double a : data)
+            sum += a;
+        return sum/data.length;
+    }
+
+    public static double getVariance(double[] data) {
+        double mean = getMean(data);
+        double temp = 0;
+        for(double a :data)
+            temp += (a-mean)*(a-mean);
+        return temp/(data.length-1);
+    }
 }

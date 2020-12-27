@@ -453,4 +453,47 @@ public class AllObservationFixITs implements EfusionListener {
             e.printStackTrace();
         }
     }
+
+    @Test
+    public void test_TwoAssets_NonConsistentMeasurements() throws Exception {
+        /* Targets to be tracked by filter, specified by client */
+        efusionProcessManager.reconfigureTarget(target_d);
+
+        /* Targets for the sim observer to report data on */
+        Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
+        {{
+            put(target_d.getId(), target_d);
+            //target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
+        }};
+        simulatedTargetObserver.setTestTargets(testTargets);
+
+        simulatedTargetObserver.setAoa_rand_factor(3.1); // i.e 180degrees wrong
+        simulatedTargetObserver.setTdoa_rand_factor(0.0000001);
+        simulatedTargetObserver.setRange_rand_factor(2000);
+
+        asset_b.setProvide_range(false);
+        asset_d.setProvide_range(false);
+
+        /* Assets to measure observations to/from */
+        Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
+        {{
+            //put(asset_a.getId(), asset_a);
+            put(asset_b.getId(), asset_b);
+            //put(asset_c.getId(), asset_c);
+            put(asset_d.getId(), asset_d);
+        }};
+        simulatedTargetObserver.setTestAssets(assets);
+
+        /* Execute a single observation set generation */
+        simulatedTargetObserver.run();
+        log.debug("Number of observations added for this test: "+efusionProcessManager.getGeoMission().getObservations().size());
+
+        try {
+            ComputeResults computeResults = efusionProcessManager.start();
+            log.info("Results: "+computeResults.toString());
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

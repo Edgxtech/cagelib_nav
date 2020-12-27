@@ -1,9 +1,13 @@
 package tech.tgo.cage.compute;
 
+import tech.tgo.cage.model.GeolocationResultStatus;
+
 import static java.util.Objects.isNull;
 
 public class GeolocationResult {
-    Boolean processed_ok;
+    //Boolean processed_ok;
+    GeolocationResultStatus status;
+    String status_message;
     double residual;
     double residual_rk;
     double lat;
@@ -68,12 +72,20 @@ public class GeolocationResult {
         this.elp_rot = elp_rot;
     }
 
-    public Boolean getProcessed_ok() {
-        return processed_ok;
+    public GeolocationResultStatus getStatus() {
+        return status;
     }
 
-    public void setProcessed_ok(Boolean processed_ok) {
-        this.processed_ok = processed_ok;
+    public void setStatus(GeolocationResultStatus status) {
+        this.status = status;
+    }
+
+    public String getStatus_message() {
+        return status_message;
+    }
+
+    public void setStatus_message(String status_message) {
+        this.status_message = status_message;
     }
 
     @Override
@@ -83,6 +95,8 @@ public class GeolocationResult {
                 ", Lon: " + ((isNull(lon)) ? "" : lon) +
                 ", Elp_Long: " + ((isNull(elp_long)) ? "" : elp_long) +
                 ", Elp_Short: " + ((isNull(elp_short)) ? "" : elp_short) +
-                ", Elp_Rot: " + ((isNull(elp_rot)) ? "" : elp_rot) ;
+                ", Elp_Rot: " + ((isNull(elp_rot)) ? "" : elp_rot) +
+                ", Status: " + ((isNull(status)) ? "" : status.name()) +
+                ", Status Message: " + ((isNull(status_message)) ? "" : status_message);
     }
 }

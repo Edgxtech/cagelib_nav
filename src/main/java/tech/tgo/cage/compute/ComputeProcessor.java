@@ -8,7 +8,9 @@ import tech.tgo.cage.model.*;
 import tech.tgo.cage.util.Helpers;
 import tech.tgo.cage.util.KmlFileHelpers;
 import tech.tgo.cage.util.KmlFileStaticHelpers;
+import tech.tgo.cage.util.MyMaths;
 
+import java.nio.DoubleBuffer;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,6 +74,9 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
     Set<String> uniqueObservedTargets;
     Map<String,Target> activeTargets = new HashMap<String,Target>();
+
+    //double[] residual_buffer = new double[]{};
+    DoubleBuffer residualBuffer = DoubleBuffer.allocate(50);
 
     /*
      * Create processor for the given config, observations and client implemented listener
@@ -180,7 +185,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
         // TODO, replace this with new dispatch method???
         //dispatchResult(Xk);
-        GeolocationResult geolocationResult = summariseResult(Xk);
+        GeolocationResult geolocationResult = summariseResult(Xk, GeolocationResultStatus.in_progress, null);
         ComputeResults computeResults = new ComputeResults();
         computeResults.setGeolocationResult(geolocationResult);
         computeResults.setGeoId(this.geoMission.getGeoId());
@@ -192,6 +197,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         FilterStateDTO filterStateDTO = new FilterStateDTO();
 
         long startTime = Calendar.getInstance().getTimeInMillis();
+        long universalStartTime = startTime;
 
         if (this.geoMission.getOutputFilterState()) {
             kmlFileHelpers = new KmlFileHelpers();
@@ -199,6 +205,9 @@ public class ComputeProcessor implements Callable<ComputeResults> {
             log.debug("Provisioned filter state export");
         }
         int filterStateExportCounter = 0;
+
+        GeolocationResultStatus status = GeolocationResultStatus.in_progress;
+        String status_message = null;
 
         while(true) {
             if (!running.get()) {
@@ -384,7 +393,16 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                 // ADDED in _nav: Normalise the residual measurement
                 residual = residual / this.observations.size();
 
-                log.debug("Residual: "+residual+", vs filterDispatchResidualError: "+this.geoMission.getFilterDispatchResidualThreshold());
+                // TODO, implement a residual delta check method in addition to a long-long time cut-off
+                if ((Calendar.getInstance().getTimeInMillis() - universalStartTime) > 7500) {
+                    log.debug("Filter has run for max allowable time, breaking execution. The geometry did not lend itself to a geolocation result");
+                    status=GeolocationResultStatus.hung;
+                    status_message="The compute process hung after processing for long time, if the residual is large, this indicates that the geometry of observations do not lend themselves to a single geolocation point and the result is not useable";
+                    break;
+                }
+
+
+                log.trace("Residual: "+residual+", vs filterDispatchResidualError: "+this.geoMission.getFilterDispatchResidualThreshold());
                 // NOTE: if residual threshold not met here, will be stuck in loop
                     if (residual < this.geoMission.getFilterDispatchResidualThreshold()) {
 
@@ -418,7 +436,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                         startTime = Calendar.getInstance().getTimeInMillis();
 
                         //dispatchResult(Xk);
-                        geolocationResult = summariseResult(Xk);
+                        geolocationResult = summariseResult(Xk, GeolocationResultStatus.in_progress, null);
                         computeResults = new ComputeResults();
                         computeResults.setGeolocationResult(geolocationResult);
                         computeResults.setGeoId(this.geoMission.getGeoId());
@@ -438,6 +456,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                                 if (residual < this.geoMission.getFilterConvergenceResidualThreshold()) {  /// ORIGINAL
 
                                     log.debug("Exiting since this is a FIX Mode run and filter has converged to threshold");
+                                    status = GeolocationResultStatus.ok;
                                     running.set(false);
                                     break;
 
@@ -467,7 +486,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
         }
 
-        geolocationResult = summariseResult(Xk);
+        geolocationResult = summariseResult(Xk, status, status_message);
         computeResults = new ComputeResults();
         computeResults.setGeolocationResult(geolocationResult);
         computeResults.setGeoId(this.geoMission.getGeoId());
@@ -773,7 +792,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         this.staged_observations = staged_observations;
     }
 
-    public GeolocationResult summariseResult(RealVector Xk) {
+    public GeolocationResult summariseResult(RealVector Xk, GeolocationResultStatus status, String status_message) {
 
         double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(0),Xk.getEntry(1), this.geoMission.getLatZone(), this.geoMission.getLonZone());
 
@@ -828,6 +847,8 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         geolocationResult.setElp_short(half_minor_axis_length*10000);
         geolocationResult.setElp_rot(rot);
         geolocationResult.setResidual(residual);
+        geolocationResult.setStatus(status);
+        geolocationResult.setStatus_message(status_message);
         //geolocationResult.setResidual_rk(residual_rk);
 
         return geolocationResult;
