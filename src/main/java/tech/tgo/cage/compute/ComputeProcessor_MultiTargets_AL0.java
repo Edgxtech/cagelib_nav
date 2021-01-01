@@ -80,7 +80,8 @@ public class ComputeProcessor_MultiTargets_AL0 implements Callable<ComputeResult
         // Determine an initial guess
         double[] start_x_y;
         if (this.geoMission.getFilterUseSpecificInitialCondition()) {
-            double[] init_utm = Helpers.convertLatLngToUtmNthingEasting(this.geoMission.getFilterSpecificInitialLat(), this.geoMission.getFilterSpecificInitialLon());
+//            double[] init_utm = Helpers.convertLatLngToUtmNthingEasting(this.geoMission.getFilterSpecificInitialLat(), this.geoMission.getFilterSpecificInitialLon());
+            double[] init_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(this.geoMission.getFilterSpecificInitialLat(), this.geoMission.getFilterSpecificInitialLon(), this.geoMission.getLatZone(), this.geoMission.getLonZone());
             start_x_y = new double[]{init_utm[1], init_utm[0]};
         }
         else {
@@ -96,7 +97,8 @@ public class ComputeProcessor_MultiTargets_AL0 implements Callable<ComputeResult
                 log.debug("Using RANDOM initial condition: near asset(s) ['" + randAssetA.getId() + "' & '" + randAssetB.getId() + "']: " + start_x_y[1] + ", " + start_x_y[0]);
             } else {
                 Asset asset = assetList.get(0);
-                double[] asset_utm = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+//                double[] asset_utm = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+                double[] asset_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1], this.geoMission.getLatZone(), this.geoMission.getLonZone());
                 start_x_y = new double[]{asset_utm[1] + 5000, asset_utm[0] - 5000};
                 log.debug("Using RANDOM initial condition: near asset [" + asset.getId() + "]: " + start_x_y[1] + ", " + start_x_y[0]);
             }
@@ -621,8 +623,10 @@ public class ComputeProcessor_MultiTargets_AL0 implements Callable<ComputeResult
 
     public double[] findRudimentaryStartPoint(Asset asset_a, Asset asset_b, double addition) {
         double x_init=0; double y_init=0;
-        double[] asset_a_utm = Helpers.convertLatLngToUtmNthingEasting(asset_a.getCurrent_loc()[0],asset_a.getCurrent_loc()[1]);
-        double[] asset_b_utm = Helpers.convertLatLngToUtmNthingEasting(asset_b.getCurrent_loc()[0],asset_b.getCurrent_loc()[1]);
+//        double[] asset_a_utm = Helpers.convertLatLngToUtmNthingEasting(asset_a.getCurrent_loc()[0],asset_a.getCurrent_loc()[1]);
+//        double[] asset_b_utm = Helpers.convertLatLngToUtmNthingEasting(asset_b.getCurrent_loc()[0],asset_b.getCurrent_loc()[1]);
+        double[] asset_a_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(asset_a.getCurrent_loc()[0],asset_a.getCurrent_loc()[1], this.geoMission.getLatZone(), this.geoMission.getLonZone());
+        double[] asset_b_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(asset_b.getCurrent_loc()[0],asset_b.getCurrent_loc()[1], this.geoMission.getLatZone(), this.geoMission.getLonZone());
         if (asset_b == null) {
             x_init = asset_a_utm[1] + addition;
             y_init = asset_a_utm[0] - addition;

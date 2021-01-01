@@ -256,14 +256,15 @@ public class Observation {
     @Override
     public String toString() {
         return "Id: " + ((isNull(id)) ? "" : id) +
+                ", Asset Id: " + ((isNull(assetId)) ? "" : assetId) +
+                ", Asset Id: " + ((isNull(observationType)) ? "" : observationType) +
+                ", Meas: " + ((isNull(meas)) ? "" : meas) +
                 ", Lat: " + ((isNull(lat)) ? "" : lat) +
                 ", Lon: " + ((isNull(lon)) ? "" : lon) +
-                ", Meas: " + ((isNull(meas)) ? "" : meas) +
-                ", Asset Id: " + ((isNull(assetId)) ? "" : assetId) +
-                ", Target Id: " + ((isNull(targetId)) ? "" : targetId) ;
+                ", Target Id: " + ((isNull(targetId)) ? "" : targetId) +
+                ", UTM X: " + ((isNull(x)) ? "" : x) +
+                ", UTM Y: " + ((isNull(y)) ? "" : y) +
+                ", UTM LonZone: " + ((isNull(x_lonZone)) ? "" : x_lonZone) +
+                ", UTM LatZone: " + ((isNull(y_latZone)) ? "" : y_latZone);
     }
-
-//    public String toString() {
-//        return "ID: "+id+", type: "+observationType.name()+", assetId: "+assetId+", targetId: "+targetId+", targetIdB: "+targetId_b+", meas: "+meas;
-//    }
 }

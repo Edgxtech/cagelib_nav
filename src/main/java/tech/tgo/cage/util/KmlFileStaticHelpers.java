@@ -266,7 +266,8 @@ public class KmlFileStaticHelpers {
                 double elp_rot = geolocationResult.getElp_rot();
 
                 //double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEasting(geoMission.getTarget().getCurrent_loc()[0], geoMission.getTarget().getCurrent_loc()[1]);
-                double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEasting(lat, lon);
+//                double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEasting(lat, lon);
+                double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEastingSpecificZone(lat, lon, geoMission.getLatZone(), geoMission.getLonZone());
                 log.debug("UTM Target Loc: "+utm_target_loc[0]+", "+utm_target_loc[1]);
 
                 // temp swapped bottom row to cos,sin
@@ -548,7 +549,7 @@ public class KmlFileStaticHelpers {
     /* Plot AOA measurements */
     public static void exportMeasurementDirections(Document doc, Element dnode, GeoMission geoMission) {
         Set keys = geoMission.linesToShow;
-        log.trace("# measurement lines: "+keys.size());
+        log.trace("# measurement lines to print: "+keys.size());
         Iterator keyIt = keys.iterator();
         while (keyIt.hasNext()) {
             Long ele = (Long) keyIt.next();
@@ -558,7 +559,7 @@ public class KmlFileStaticHelpers {
             if (!aoa_line.isEmpty())
             {
                 try {
-                    log.trace("CREATING NEW MEAS Line in KML");
+                    log.trace("CREATING NEW KML MEAS Line for observation: "+ele+", for observation: "+geoMission.getObservations().get(ele).getAssetId());
 
                     Element measPlacemark = doc.createElement("Placemark");
                     dnode.appendChild(measPlacemark);
@@ -585,7 +586,7 @@ public class KmlFileStaticHelpers {
                             }
                         }
                     } catch (Exception esynch) {
-                        log.trace("error iterating over measurement line, b/c it being updated");
+                        log.warn("error iterating over measurement line, b/c it being updated");
                     }
                     line.appendChild(circleCoords);
 

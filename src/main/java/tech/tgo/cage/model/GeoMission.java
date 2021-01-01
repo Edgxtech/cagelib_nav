@@ -87,6 +87,8 @@ public class GeoMission {
 
     public Target target;
 
+    public int primaryUTMLonZone;
+
     // TODO, consider holding a longer history here
     //Map<String,GeoResult> resultBuffer = new HashMap<String,GeoResult>();
 
@@ -348,6 +350,14 @@ public class GeoMission {
         this.target = target;
     }
 
+    public int getPrimaryUTMLonZone() {
+        return primaryUTMLonZone;
+    }
+
+    public void setPrimaryUTMLonZone(int primaryUTMLonZone) {
+        this.primaryUTMLonZone = primaryUTMLonZone;
+    }
+
     @Override
     public String toString() {
         return "Geo Id: " + ((isNull(geoId)) ? "" : geoId) +
@@ -367,6 +377,7 @@ public class GeoMission {
                 ", filterConvergenceResidualThreshold: " + ((isNull(filterConvergenceResidualThreshold)) ? "" : filterConvergenceResidualThreshold) +
                 ", filterDispatchResidualThreshold: " + ((isNull(filterDispatchResidualThreshold)) ? "" : filterDispatchResidualThreshold) +
                 ", filterMeasurementError: " + ((isNull(filterMeasurementError)) ? "" : filterMeasurementError) +
-                ", filterProcessNoise: " + ((isNull(filterProcessNoise)) ? "" : filterProcessNoise);
+                ", filterProcessNoise: " + ((isNull(filterProcessNoise)) ? "" : filterProcessNoise) +
+                ", primaryUTMLonZone: " + ((isNull(primaryUTMLonZone)) ? "" : primaryUTMLonZone);
     }
 }

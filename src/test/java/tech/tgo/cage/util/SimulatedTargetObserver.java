@@ -1,12 +1,17 @@
 package tech.tgo.cage.util;
 
+import com.sun.corba.se.spi.monitoring.StatisticsAccumulator;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.tgo.cage.EfusionProcessManager;
+import tech.tgo.cage.model.Asset;
 import tech.tgo.cage.model.Observation;
 import tech.tgo.cage.model.ObservationType;
+import tech.tgo.cage.util.Helpers;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Simulate new observations following target
@@ -52,19 +57,52 @@ public class SimulatedTargetObserver extends TimerTask {
             efusionProcessManager.getGeoMission().getTarget().setTrue_current_loc(new Double[]{testTarget.getTrue_lat(), testTarget.getTrue_lon()});
         }
 
+        //
+        // TODO, need some concept of checking the UTM zones of all the different assets/targets, and selecting that with majority, then ensuring all UTM projections
+        // use a single zone
+        //  PERHAPS can use the stored geoMission lon Zone, after addding all observations, instead of recomputing it again here?
+        //
+//        List<Integer> zoneStats = new ArrayList<Integer>();
+//        for (TestTarget testTarget :testTargets.values()) {
+//            int lonZone = (int) Helpers.getUtmLatZoneLonZone(testTarget.getTrue_lat(), testTarget.getTrue_lon())[1];
+//            zoneStats.add(lonZone);
+//        }
+//        for (TestAsset asset : testAssets.values()) {
+//            int lonZone = (int) Helpers.getUtmLatZoneLonZone(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1])[1];
+//            zoneStats.add(lonZone);
+//        }
+//        log.debug("Zone stats: "+zoneStats);
+//        int mostPopularLonZone = Helpers.getMode(zoneStats.stream().filter(t -> t != null).mapToInt(t -> t).toArray());
+        List<Asset> testAssetsList = testAssets.values().stream().collect(Collectors.toList());
+        int mostPopularLonZone = Helpers.getMostPopularLonZoneFromAssets(testAssetsList);
+        char mostPopularLatZone = Helpers.getMostPopularLatZoneFromAssets(testAssetsList);
+
+        //int mostPopularLonZone = this.efusionProcessManager.getGeoMission().getLonZone();  THIS DOESN"T WORK SINCE OBS NOT YET ADDED
+        log.debug("Most popular Lon Zone: "+mostPopularLonZone);
+        log.debug("Most popular Lat Zone: "+mostPopularLatZone);
+
 
         // 1. FOR EACH testTarget, go through all assets and see which ones to generate a measurement to (NOT FROM!)
         for (TestTarget testTarget :testTargets.values()) {
             log.debug("Generating new observations for target: "+testTarget.getId());
 
-            double[] utm_coords = Helpers.convertLatLngToUtmNthingEasting(testTarget.getTrue_lat(), testTarget.getTrue_lon());
+            double[] utm_coords = Helpers.convertLatLngToUtmNthingEastingSpecificZone(testTarget.getTrue_lat(), testTarget.getTrue_lon(), mostPopularLatZone, mostPopularLonZone);
+            //double[] utm_coords = Helpers.convertLatLngToUtmNthingEasting(testTarget.getTrue_lat(), testTarget.getTrue_lon());
             double true_y = utm_coords[0]; /// TRUE (SIM) LOCATION OF MY TARGET - i.e. THE PLATFORM TO ESTIMATE
             double true_x = utm_coords[1];
+            log.debug("True Target UTM coords: "+utm_coords[0]+", "+utm_coords[1]);
 
             /* for each asset, generate relevant observations */
             log.debug("Regenerating observations from # assets: " + testAssets.keySet().size());
             for (TestAsset asset : testAssets.values()) {
-                utm_coords = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+
+                log.debug("Asset Loc: "+asset.getCurrent_loc()[0] +", "+ asset.getCurrent_loc()[1]);
+//                utm_coords = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+                double[] temp_utm_coords = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
+                log.debug("Orig UTM coords: "+temp_utm_coords[0]+", "+temp_utm_coords[1]);
+                utm_coords = Helpers.convertLatLngToUtmNthingEastingSpecificZone(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1], mostPopularLatZone, mostPopularLonZone);
+                log.debug("Specific Orig UTM coords: "+utm_coords[0]+", "+utm_coords[1]);
+
                 double asset_y = utm_coords[0];
                 double asset_x = utm_coords[1];
 
@@ -81,6 +119,12 @@ public class SimulatedTargetObserver extends TimerTask {
                             assetToObservationIdMapping.put(asset.getId() + "_" + ObservationType.range.name() + "_" + testTarget.getId(), obsId);
                         }
                         //double meas_range = Math.sqrt(Math.pow(a_y-true_y,2) + Math.pow(a_x-true_x,2)) + Math.random()*range_rand_factor; orig
+                        log.debug("Asset x: "+asset_x);
+
+                        // TODO, up to here, seeing asset_x = 706089.97829938 for lon= -0.03 and 707386.5858869819 for lon -0.1 but Asset x: 292613.4141130181 for lon=0.01
+                        //   This indicates the UTM does not smoothly go accross the boundary.
+                        //   This is causing the computed range estimate etc... to be out of whack, and probably screwing up the filter operation also
+
                         double meas_range = ObservationTestHelpers.getRangeMeasurement(asset_y, asset_x, true_y, true_x, range_rand_factor);
                         log.debug("Asset: " + asset.getId() + ", Meas range: " + meas_range);
 
@@ -119,7 +163,8 @@ public class SimulatedTargetObserver extends TimerTask {
 //                            double b_x = utm_coords[1];
                             TestTarget target1 = testTargets.get(secondary_target_id);
                             //utm_coords = Helpers.convertLatLngToUtmNthingEasting(target1.getTrue_current_loc()[0], target1.getTrue_current_loc()[1]); // Changed to getTrue.. in Nav, since this is sim observer -- TODO, however need to actually set it in this sim observer
-                            utm_coords = Helpers.convertLatLngToUtmNthingEasting(target1.getTrue_lat(), target1.getTrue_lon()); // LATEST: changed to getTrueLat/lon
+//                            utm_coords = Helpers.convertLatLngToUtmNthingEasting(target1.getTrue_lat(), target1.getTrue_lon()); // LATEST: changed to getTrueLat/lon
+                            utm_coords = Helpers.convertLatLngToUtmNthingEastingSpecificZone(target1.getTrue_lat(), target1.getTrue_lon(), mostPopularLatZone, mostPopularLonZone); // LATEST: changed to getTrueLat/lon
                             double true_y_b = utm_coords[0]; // This
                             double true_x_b = utm_coords[1];
 

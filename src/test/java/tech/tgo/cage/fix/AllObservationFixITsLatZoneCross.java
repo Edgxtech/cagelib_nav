@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 import tech.tgo.cage.EfusionListener;
 import tech.tgo.cage.EfusionProcessManager;
 import tech.tgo.cage.compute.ComputeResults;
-import tech.tgo.cage.model.MissionMode;
 import tech.tgo.cage.model.GeoMission;
+import tech.tgo.cage.model.MissionMode;
 import tech.tgo.cage.util.ConfigurationException;
 import tech.tgo.cage.util.SimulatedTargetObserver;
 import tech.tgo.cage.util.TestAsset;
@@ -22,9 +22,9 @@ import java.util.Map;
 /**
  * @author Timothy Edge (timmyedge)
  */
-public class AllObservationFixITs implements EfusionListener {
+public class AllObservationFixITsLatZoneCross implements EfusionListener {
 
-    private static final Logger log = LoggerFactory.getLogger(AllObservationFixITs.class);
+    private static final Logger log = LoggerFactory.getLogger(AllObservationFixITsLatZoneCross.class);
 
     Map<String,GeoMission> missionsMap = new HashMap<String,GeoMission>();
 
@@ -33,10 +33,16 @@ public class AllObservationFixITs implements EfusionListener {
     SimulatedTargetObserver simulatedTargetObserver = new SimulatedTargetObserver();
 
     /* Some common asset coords to reuse */
-    double[] asset_a_coords = new double[]{-31.9, 115.98}; // PERTH Area
-    double[] asset_b_coords = new double[]{-31.88, 115.97};
-    double[] asset_c_coords = new double[]{-31.78, 115.90};
-    double[] asset_d_coords = new double[]{-32.0, 115.85};
+    // GLADSTONE, QLD area
+    double[] asset_a_coords = new double[]{-23.740424, 151.273656};  // CURTIS ISLAND
+    double[] asset_b_coords = new double[]{-23.877916, 151.227849}; // AIRPORT
+    double[] asset_c_coords = new double[]{-24.081459, 151.651622}; // TURKEY BEACH
+    double[] asset_d_coords = new double[]{-24.212426, 151.905762}; // AGNES WATER
+
+    // Alternates for investigation
+    //double[] asset_a_coords = new double[]{-24.010424, 151.273656};  // CURTIS ISLAND
+    //double[] asset_b_coords = new double[]{-24.057916, 151.227849}; // AIRPORT
+    //double[] asset_c_coords = new double[]{-23.881459, 151.651622}; // TURKEY BEACH
 
     TestAsset asset_a = new TestAsset();
     TestAsset asset_b = new TestAsset();
@@ -61,31 +67,10 @@ public class AllObservationFixITs implements EfusionListener {
 
         target_a.setId("A");
         target_a.setName("Target A");
-        target_a.setTrue_lat(-31.98); // BOTTOM
-        target_a.setTrue_lon(116.000);
-        target_a.setLat_move(0.0); // STATIC
+        target_a.setTrue_lat(-23.571716); // MASTHEAD ISLAND
+        target_a.setTrue_lon(151.734762); //151.757837
+        target_a.setLat_move(0.0);
         target_a.setLon_move(0.0);
-
-        target_b.setId("B");
-        target_b.setName("Target B");
-        target_b.setTrue_lat(-31.88); // TOP RIGHT
-        target_b.setTrue_lon(115.990);
-        target_b.setLat_move(0.0); // STATIC
-        target_b.setLon_move(0.0);
-
-        target_c.setId("C");
-        target_c.setName("Target C");
-        target_c.setTrue_lat(-31.78); // TOP MIDDLE?
-        target_c.setTrue_lon(115.890);
-        target_c.setLat_move(0.0); // STATIC
-        target_c.setLon_move(0.0);
-
-        target_d.setId("D");
-        target_d.setName("Target D");
-        target_d.setTrue_lat(-32.1); // BOTTOM LEFT
-        target_d.setTrue_lon(115.790);
-        target_d.setLat_move(0.0); // STATIC
-        target_d.setLon_move(0.0);
 
         geoMission.setGeoId("MY_GEO_ID");
         geoMission.setShowMeas(true);
@@ -151,12 +136,6 @@ public class AllObservationFixITs implements EfusionListener {
         asset_d.setCurrent_loc(asset_d_coords);
     }
 
-    /* Result callback - I think these will be useful for tracking only */
-//    @Override
-//    public void result(String geoId, String target_id, double lat, double lon, double cep_elp_maj, double cep_elp_min, double cep_elp_rot) {
-//        log.debug("Result -> GeoId: "+geoId+", TargetId: "+target_id+", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot);
-//    }
-
     @Override
     public void result(ComputeResults computeResults) {
         log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+computeResults.getGeoId()+", Lat: "+computeResults.getGeolocationResult().getLat()+", Lon: "+computeResults.getGeolocationResult().getLon()+", CEP major: "+computeResults.getGeolocationResult().getElp_long()+", CEP minor: "+computeResults.getGeolocationResult().getElp_short()+", CEP rotation: "+computeResults.getGeolocationResult().getElp_rot());
@@ -165,7 +144,7 @@ public class AllObservationFixITs implements EfusionListener {
     }
 
     @Test
-    public void testBottom_FourAssets() throws Exception {
+    public void testFourAssets() throws Exception {
         /* Targets to be tracked by filter, specified by client */
         efusionProcessManager.reconfigureTarget(target_a);
 
@@ -173,9 +152,7 @@ public class AllObservationFixITs implements EfusionListener {
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);
-            //put(target_b.getId(), target_b);
             target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
-            //target_b.setTdoa_target_ids(Arrays.asList(new String[]{})); // TDOA NOT USED IN NAV
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
@@ -204,25 +181,19 @@ public class AllObservationFixITs implements EfusionListener {
         catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     @Test
-    public void testBottom_TwoAssets() throws Exception {
+    public void testTwoAssets() throws Exception {
         /* Targets to be tracked by filter, specified by client */
-        //Map<String,Target> targets = new HashMap<String,Target>();
-        //targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
-        //targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName(),new Double[]{target_b.getTrue_lat(),target_b.getTrue_lon()}));
-        //efusionProcessManager.reconfigureTargets(targets);
-        //  REMOVED MULTIPLE TARGETS, SINCE NOT INTENDING TO ADDRESS THE DUEL TARGET TDOA PROBLEM
         efusionProcessManager.reconfigureTarget(target_a);
 
         /* Targets for the sim observer to report data on */
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);
-            //put(target_b.getId(), target_b);
             target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
-            //target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
@@ -234,7 +205,7 @@ public class AllObservationFixITs implements EfusionListener {
         Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
         {{
             put(asset_a.getId(), asset_a);
-            put(asset_b.getId(), asset_b);
+            put(asset_d.getId(), asset_d);
         }};
         simulatedTargetObserver.setTestAssets(assets);
 

@@ -29,6 +29,37 @@ public class TestMaths {
     private static final Logger log = LoggerFactory.getLogger(TestMaths.class);
 
     @Test
+    public void testMeasureDistance() {
+
+        double lat1 = 51.5;
+        double lon1 = -0.2;
+        double lat2 = 51.5;
+        double lon2 = 0.1;
+
+        double[] utm_coords = Helpers.convertLatLngToUtmNthingEasting(lat1, lon1);
+        double asset_y = utm_coords[0];
+        double asset_x = utm_coords[1];
+
+        utm_coords = Helpers.convertLatLngToUtmNthingEasting(lat2, lon2);
+        double true_y = utm_coords[0];
+        double true_x = utm_coords[1];
+
+        double meas_range = ObservationTestHelpers.getRangeMeasurement(asset_y, asset_x, true_y, true_x, 0.0);
+        log.debug("Meas range: " + meas_range);
+
+
+        // Range meas 2 - haversine
+        double R = 6371e3;
+        double l1 = lat1 * Math.PI/180;
+        double l2 = lat2 * Math.PI/180;
+        double delta_a = (l2 - l1) * Math.PI/180;
+        double delta_b = (lon2-lon1) * Math.PI/180;
+        double a = Math.sin(delta_a/2) * Math.sin(delta_a/2) + Math.cos(l1) * Math.cos(l2) * Math.sin(delta_b/2) * Math.sin(delta_b/2);
+        double c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        log.debug("Meas range (haversine): "+R*c);
+    }
+
+    @Test
     public void testEvectorFinder() {
         double[][] covMatrix = new double[][]{{1500, -50}, {50, 1900}};
         double[] evalues = Helpers.getEigenvalues(covMatrix);
@@ -137,5 +168,30 @@ public class TestMaths {
             log.trace("error exporting cep circle to kml");
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void testUTMConversion() {
+        //double lat = 51.51;
+        //double lon = -0.03;
+//        double lat = -31.9;
+//        double lon = 115.98;
+        double lat = -32.0;
+        double lon = 115.85;
+        double[] utm_a = Helpers.convertLatLngToUtmNthingEasting(lat, lon);
+        double[] utm_b = Helpers.convertLatLngToUtmNthingEastingSpecificZone(lat, lon, 'J', 50);
+        log.debug("UTM (natural): "+utm_a[0]+","+utm_a[1]);
+        log.debug("UTM (specific): "+utm_b[0]+","+utm_b[1]);
+
+        Object[] zones = Helpers.getUtmLatZoneLonZone(lat, lon);
+        log.debug("UTM natural zone: "+zones[0]+", "+zones[1]);
+
+        UTMRef utmRef = Helpers.toUTMRefSpecificZone(lat, lon, 'J', 50);
+        log.debug("UTM (specific2): "+utmRef.getNorthing()+", "+utmRef.getEasting());
+
+//        11:40:22.849 [main] DEBUG tech.tgo.cage.util.TestMaths:181 - UTM (natural): 6470194.755756934,403548.8617473827
+//        11:40:22.853 [main] DEBUG tech.tgo.cage.util.TestMaths:182 - UTM (specific): 6470194.755756934,403548.8617473827
+//        11:40:22.854 [main] DEBUG tech.tgo.cage.util.TestMaths:185 - UTM natural zone: J, 50
+//        11:40:22.855 [main] DEBUG tech.tgo.cage.util.TestMaths:188 - UTM (specific2): 6470194.755756934, 403548.8617473827
     }
 }
