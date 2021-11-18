@@ -23,7 +23,7 @@
         </encoder>
     </appender>
 
-    <logger name="tech.tgo.cage" level="DEBUG" />
+    <logger name="au.com.ausstaker.cage" level="DEBUG" />
     <logger name="au.com.ausstaker.cage.compute.ComputeProcessor" level="DEBUG" />
 
     <root level="DEBUG">
