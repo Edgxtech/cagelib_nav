@@ -142,7 +142,7 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                     obs.setCircleGeometry(measurementCircle);
                 }
 
-                /* TDOA MEASUREMENT */
+                /* TDOA MEASUREMENT - DEVELOPMENTAL CODE NOT USED */
                 if (obs.getObservationType().equals(ObservationType.tdoa)) {
                     log.debug("Defining obs hyperbola geometry");
                     List<double[]> measurementHyperbola = new ArrayList<double[]>();
@@ -160,9 +160,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                     if ((r_a!=null) && (r_b!=null)) {
                         log.debug("Using target position for TDOA plot 1/2: "+r_a.toString());
                         log.debug("Using target position for TDOA plot 2/2: "+r_b.toString());
-
-    //                    double[] r_a_utm = Helpers.convertLatLngToUtmNthingEasting(r_a.getLat(), r_a.getLon()); // RETURNS IN [NTHING===Y , EASTING===X]
-    //                    double[] r_b_utm = Helpers.convertLatLngToUtmNthingEasting(r_b.getLat(), r_b.getLon());
                         double[] r_a_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(r_a.getLat(), r_a.getLon(), obs.getY_latZone(), obs.getX_lonZone()); // RETURNS IN [NTHING===Y , EASTING===X]
                         double[] r_b_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(r_b.getLat(), r_b.getLon(), obs.getY_latZone(), obs.getX_lonZone());
 
@@ -250,15 +247,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
             throw new ConfigurationException("There were no observations, couldn't start the process");
         }
 
-//        // Use a common UTM lon Zone for all computing
-//        log.debug("Assets: "+this.geoMission.getAssets().keySet());
-//        List<Asset> assets = geoMission.getAssets().values().stream().collect(toCollection(ArrayList::new));
-//        int mostPopularLonZone = Helpers.getMostPopularLonZoneFromAssets(assets);
-//        int mostPopularLatZone = Helpers.getMostPopularLatZoneFromAssets(assets);
-//        log.debug("Most popular Lon Zone: "+mostPopularLonZone+", Most popular Lat Zone: "+mostPopularLatZone);
-//        this.geoMission.setPrimaryUTMLonZone(mostPopularLonZone); // No longer relevant?
-//        //this.geoMission.setPrimaryUTMLonZone();  // TODO, add PrimLatZone?
-
         computeProcessor = new ComputeProcessor(this.actionListener, this, this.geoMission.observations, this.geoMission);
         FutureTask<ComputeResults> future = new FutureTask<ComputeResults>(computeProcessor);
         future.run();
@@ -289,71 +277,15 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
     public void reconfigureTargets(Map<String,Target> targets) throws Exception {
         log.debug("Reconfiguring with # targets: "+targets.size());
         this.geoMission.setTargets(targets);
-
         EfusionValidator.validateTargets(targets.values());
-
-//        // This needs to include targets even though no observations may be present?
-//        // Determine targets requiring estimation - extract from set of observations
-//        uniqueObservedTargets = new HashSet<String>();
-//        log.debug("# active observations: "+this.observations.size());
-//        for (Observation obs : this.observations.values()) {
-//
-//            //1. determine all unique targets, then set the size of relevant matrices
-//            //2. index the state indexes in the stateIndexMap
-//            uniqueObservedTargets.add(obs.getTargetId());
-//            activeTargets.put(obs.getTargetId(), new Target(obs.getTargetId(), "ARB-NAME"));
-//            log.debug("Processing observation: "+obs.toString());
-//            if (obs.getTargetId_b()!=null) {
-//                uniqueObservedTargets.add(obs.getTargetId_b());
-//                activeTargets.put(obs.getTargetId_b(), new Target(obs.getTargetId_b(),"ARB-NAME"));
-//                log.debug("Adding (secondary) target to target set: "+obs.getTargetId_b());
-//            }
-//            log.debug("Adding target to target set: "+obs.getTargetId());
-//        }
-//
-//        //TODO, need to merge/remove targets, maintain an original set in geoMission.setTargets() which has lat/lon estimates updated to
-//        // TODO, here need to dynamically create the targets array
-//
-//        if (this.geoMission.getTargets()==null || this.geoMission.getTargets().isEmpty()) {
-//            log.debug("No target list set, initialising with # active targets: "+activeTargets.size());
-//            this.geoMission.setTargets(activeTargets);
-//        }
-//        else {
-//            log.debug("Merging with # existing targets: " + this.geoMission.getTargets().size());
-//
-//            for (Target target : this.geoMission.getTargets().values()) {
-//
-//                if (uniqueObservedTargets.contains(target.getId())) {
-//                    // retain existing geoMissionTarget
-//                    uniqueObservedTargets.remove(target.getId());
-//                }
-//            }
-//
-//            // for each remaining unique observed target, add it
-//            for (String uniqueObservedTargetId : uniqueObservedTargets) {
-//                this.geoMission.getTargets().put(uniqueObservedTargetId, new Target(uniqueObservedTargetId, "ARB-NEW-TGT-NAME"));
-//            }
-//            // Now
-//            log.debug("Merged target list with missing targets, size now: "+this.geoMission.getTargets().size());
-//        }
     }
 
     public void configure(GeoMission geoMission) throws Exception {
         this.geoMission = geoMission;
-
         log.debug("Configuring GeMission: "+geoMission.toString());
-
         EfusionValidator.validate(geoMission);
-
-//        /* Uses defaults - overridden by some implementations (required for pur tdoa processing) */
-//        geoMission.setFilterProcessNoise(new double[][]{{0.01, 0, 0, 0}, {0, 0.01 ,0, 0}, {0, 0, 0.01, 0}, {0, 0, 0 ,0.01}});    -- MOVED IN NAV USE CASE TO SPT DYNAMIC STATE SIZES, MOVED TO setObservations in computeProcessor
-
+        /* Uses defaults - overridden by some implementations (required for pur tdoa processing) */
         Properties properties = new Properties();
-
-        /// THIS DOESNT WORK IN FATJAR - RESULTS IN NULL POINTER
-        //String appConfigPath = Thread.currentThread().getContextClassLoader().getResource("").getPath() + "cage_nav.properties";;
-        //properties.load(new FileInputStream(appConfigPath));
-        // REPLACED WITH THIS
         InputStream input = EfusionProcessManager.class.getClassLoader().getResourceAsStream("cage_nav.properties");
 
         if (input == null) {
@@ -471,12 +403,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
             }
         }
     }
-
-//    @Override
-//    public void result(String geoId, String target_id, double lat, double lon, double cep_elp_maj, double cep_elp_min, double cep_elp_rot) {
-//        log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+geoId+", TargetId: "+target_id+", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot);
-//        this.resultBuffer.put(target_id, new GeoResult(geoId,target_id,lat,lon,cep_elp_maj,cep_elp_min,cep_elp_rot));
-//    }
 
     @Override
     public void result(ComputeResults computeResults) {

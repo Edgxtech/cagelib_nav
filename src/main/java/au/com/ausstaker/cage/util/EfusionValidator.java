@@ -24,12 +24,6 @@ public class EfusionValidator {
         if (geoMission.getMissionMode()==null) {
             throw new ConfigurationException("Mode was not specified: fix or track");
         }
-//        if (geoMission.getTargets()==null) {  /// Temp removed in NAV
-//            throw new ConfigurationException("Target(s) were not specified");
-//        }
-//        else if (geoMission.getTargets().size()==0){
-//            throw new ConfigurationException("Target(s) were not specified");
-//        }
 //        else if (geoMission.getTargets().getId()==null || geoMission.getTargets().getName()==null) { // TODO, add this back
 //            throw new ConfigurationException("Target was not specified correctly");
 //        }

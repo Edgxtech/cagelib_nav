@@ -66,15 +66,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
     Map<String,Integer[]> stateIndexMap = new HashMap<String,Integer[]>();
 
-//    int matrice_size;
-//    int number_unique_targets;
-//
-//    Set<String> uniqueObservedTargets;
-//    Map<String,Target> activeTargets = new HashMap<String,Target>();
-//
-//    //double[] residual_buffer = new double[]{};
-//    DoubleBuffer residualBuffer = DoubleBuffer.allocate(50);
-
     /*
      * Create processor for the given config, observations and client implemented listener
      */
@@ -141,10 +132,8 @@ public class ComputeProcessor implements Callable<ComputeResults> {
     }
 
     public void setObservations(Map<Long, Observation> observations) {
-
         /// NOTE, this cannot have any new targets to process, since it will affect the size of state matrices
         // then this step "int[] stateIndexes = stateIndexMap.get(obs.getTargetId());" will be null
-
         Comparator<Map.Entry<Long, Observation>> valueComparator = new Comparator<Map.Entry<Long, Observation>>() {
             @Override
             public int compare(Map.Entry<Long, Observation> e1, Map.Entry<Long, Observation> e2) {
@@ -278,57 +267,9 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
                     double rk = d - f_est;
 
-//                /* '360-0 Conundrum' adjustment */
-//                    if (obs.getObservationType().equals(ObservationType.aoa)) {
-//                        if (innov.getEntry(0) != 0.0) {
-//                            if (nonAoaNextState == null) {
-//                                nonAoaNextState = Xk.add(innov);
-//                            }
-//
-//                            // TODO, this needs to be stateIndex aware. It is creating an effect where innovations are created for the wrong state/target
-//
-//                        /* gradient from obs to prevailing pressure direction */
-//                                // Math.atan((nonAoaNextState.getEntry(stateIndexes[0] + (matrice_size / 2)) - obs.getY()) / (nonAoaNextState.getEntry(stateIndexes[1]) - obs.getX())) * 180 / Math.PI;
-//                                //     stateIndexes[1] + matrice_size/2
-//                            //double pressure_angle = Math.atan((nonAoaNextState.getEntry(2) - obs.getY()) / (nonAoaNextState.getEntry(0) - obs.getX())) * 180 / Math.PI;
-//                            double pressure_angle = Math.atan((nonAoaNextState.getEntry(stateIndexes[0] + (matrice_size / 2)) - obs.getY()) / (nonAoaNextState.getEntry(stateIndexes[1]) - obs.getX())) * 180 / Math.PI;
-//                            /// /log.debug("P-ang: "+pressure_angle+", f_est: "+f_est+", Yp: "+innov.getEntry(3)+", Pressure: "+nonAoaNextState+", INNOV: "+innov);
-//                            if (nonAoaNextState.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                pressure_angle = pressure_angle + 180;
-//                            }
-//
-//                            if (nonAoaNextState.getEntry(stateIndexes[1]) < obs.getY() && nonAoaNextState.getEntry(stateIndexes[0]) >= obs.getX()) {
-//                                pressure_angle = 360 - Math.abs(pressure_angle);
-//                            }
-//                            //log.debug("P-ang (adjusted): "+pressure_angle);
-//
-//
-//                            if (Math.abs(pressure_angle) > Math.abs(f_est)) {
-//                                if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
-//                                    rk = Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                    rk = -Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                    rk = Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
-//                                    rk = -Math.abs(rk);
-//                                }
-//                            } else {
-//                                if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
-//                                    rk = -Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) > obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                    rk = Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) < obs.getX()) {
-//                                    rk = -Math.abs(rk);
-//                                } else if (Xk.getEntry(stateIndexes[1]) < obs.getY() && Xk.getEntry(stateIndexes[0]) > obs.getX()) {
-//                                    rk = Math.abs(rk);
-//                                }
-//                            }
-//                        }
-//                    }
+                    /* '360-0 Conundrum' adjustment - REMOVED to SNIPPETs */
 
-                    /// DEPRECATED IN AL1 - double[] HXk = H.operate(Xk).toArray(); RealVector innov_ = K.scalarMultiply(rk - HXk[0]).getColumnVector(0);
-                    RealVector innov_ = K.scalarMultiply(rk).getColumnVector(0);    /// rk - HXk[0]  -removed in AL1
+                    RealVector innov_ = K.scalarMultiply(rk).getColumnVector(0);
 
                     innov = innov_.add(innov);
 
@@ -341,7 +282,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                 Xk = Xk.add(innov);
                 Pk = (eye.multiply(Pk)).subtract(P_innov);
 
-            /* Export filter state - development debugging */
+                /* Export filter state - development debugging */
                 if (this.geoMission.getOutputFilterState()) {
                     filterStateExportCounter++;
                     if (filterStateExportCounter == 10) {
@@ -377,12 +318,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                 log.trace("Residual: "+residual+", vs filterDispatchResidualError: "+this.geoMission.getFilterDispatchResidualThreshold());
                 // NOTE: if residual threshold not met here, will be stuck in loop
                 if (residual < this.geoMission.getFilterDispatchResidualThreshold()) {
-//                        log.debug("Innov: "+ innov);
-//                        log.debug("Delta-x innovation: "+ innov.getEntry(stateIndexes[0] + (matrice_size / 2)));
-//                        log.debug("Delta-y innovation: "+ innov.getEntry(stateIndexes[1] + (matrice_size / 2)));
-//                        log.debug("Delta-x innovation Abs: "+ Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size / 2))));
-//                        log.debug("Delta-y innovation Abs: "+ Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size / 2))));
-//                        log.debug("Residual: "+ (Math.abs(innov.getEntry(stateIndexes[0] + (matrice_size / 2))) + Math.abs(innov.getEntry(stateIndexes[1] + (matrice_size / 2)))));
                     log.debug("Measurement Error: "+geoMission.getFilterMeasurementError());
                     log.debug("target: [" + target.getId() + "]: Dispatching Result From # Observations: " + this.observations.size());
                     log.debug("target: [" + target.getId() + "]: Residual Movements (Normalised): " + residual);
@@ -404,18 +339,15 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
                     startTime = Calendar.getInstance().getTimeInMillis();
 
-                    //dispatchResult(Xk);
                     geolocationResult = summariseResult(Xk, GeolocationResultStatus.in_progress, null);
                     computeResults = new ComputeResults();
                     computeResults.setGeolocationResult(geolocationResult);
                     computeResults.setGeoId(this.geoMission.getGeoId());
 
-                        /* Dispatch Result to listeners */
+                    /* Dispatch Result to listeners */
                     dispatchResult(computeResults);
 
-
-                    // TODO, if all targets are below threshold then break
-
+                    // If all targets are below threshold then break
                     if (geoMission.getMissionMode().equals(MissionMode.fix)) {
 
                         /// DEVING
@@ -428,7 +360,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                                 status = GeolocationResultStatus.ok;
                                 running.set(false);
                                 break;
-
                             }
                         }
                     } else {
@@ -442,16 +373,14 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                     log.trace("Residual not low enough to export result: " + residual);
                 }
             }
-
         }
 
         geolocationResult = summariseResult(Xk, status, status_message);
         computeResults = new ComputeResults();
         computeResults.setGeolocationResult(geolocationResult);
         computeResults.setGeoId(this.geoMission.getGeoId());
-        /* Dispatch Result to listeners */
+        /* Dispatch Result to listeners - DEPRECATED */
         //dispatchResult(computeResults);
-
         return computeResults;
     }
 
@@ -494,8 +423,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
     public double[] findRudimentaryStartPoint(Asset asset_a, Asset asset_b, double addition) {
         double x_init=0; double y_init=0;
-//        double[] asset_a_utm = Helpers.convertLatLngToUtmNthingEasting(asset_a.getCurrent_loc()[0],asset_a.getCurrent_loc()[1]);
-//        double[] asset_b_utm = Helpers.convertLatLngToUtmNthingEasting(asset_b.getCurrent_loc()[0],asset_b.getCurrent_loc()[1]);
         double[] asset_a_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(asset_a.getCurrent_loc()[0],asset_a.getCurrent_loc()[1], this.geoMission.getLatZone(), this.geoMission.getLonZone());
         double[] asset_b_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(asset_b.getCurrent_loc()[0],asset_b.getCurrent_loc()[1], this.geoMission.getLatZone(), this.geoMission.getLonZone());
         if (asset_b == null) {
@@ -528,102 +455,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         double[] utm_x_y_b = new double[]{Xk.getEntry(indexes_a[0]), Xk.getEntry(indexes_a[1])};
         return new double[][]{utm_x_y_a,utm_x_y_b};
     }
-
-//    // DEPRECATED NOTUSED IN SNET
-//    public void dispatchResult(RealVector Xk) {
-//
-//        //log.debug("State: "+Xk.getEntry(0)+","+Xk.getEntry(1));
-//        //log.debug("Dispatching result for # targets: "+this.geoMission.getTargets().size());
-//        //for (Target target : this.geoMission.getTargets().values()) {
-//        //REMOVED FOR SNET
-//
-//        Target target = this.geoMission.getTarget();
-//            log.debug("Dispatching result for target: "+target.getId());
-//
-//            // Get StateIndexes for each target
-//            //Integer[] indexes = stateIndexMap.get(target.getId());
-//            // REMOVED MULTITARGET for SNET
-//
-//            double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(0), Xk.getEntry(1), this.geoMission.getLatZone(), this.geoMission.getLonZone());
-//
-////            log.debug("Geomission targets size: "+this.geoMission.getTargets().size());
-////            this.geoMission.getTargets().get(target.getId()).setCurrent_loc(latLon);
-//        // REMOVED MULTITARGET for SNET
-//
-//            this.geoMission.getTarget().setCurrent_loc(latLon);
-//
-//            /* Compute probability ELP */
-////                double[][] covMatrix = new double[][]{{Pk.getEntry(0, 0), Pk.getEntry(0, 1)}, {Pk.getEntry(1, 0), Pk.getEntry(1, 1)}};
-////                log.debug("Pk: " + Pk);
-////                double[] evalues = Helpers.getEigenvalues(covMatrix);
-////                double largestEvalue = Math.max(evalues[0], evalues[1]);
-////                double smallestEvalue = Math.min(evalues[0], evalues[1]);
-////                log.debug("Large e-value: " + largestEvalue + ", Smallest e-value: " + smallestEvalue);
-////                double[] evector = Helpers.getEigenvector(covMatrix, largestEvalue);
-////                double rot = Math.atan(evector[1] / evector[0]);
-////                double major = 2 * Math.sqrt(9.210 * largestEvalue); // 5.991 equiv 95% C.I, 4.605 equiv 90% C.I, 9.210 equiv 99% C.I
-////                double minor = 2 * Math.sqrt(9.210 * smallestEvalue);
-////                this.geoMission.getTargets().get(target.getId()).setElp_major(major);
-////                this.geoMission.getTargets().get(target.getId()).setElp_minor(minor);
-////                this.geoMission.getTargets().get(target.getId()).setElp_rot(rot);
-//
-//            double[][] covMatrix=new double[][]{{Pk.getEntry(0,0),Pk.getEntry(0,1)},{Pk.getEntry(1,0),Pk.getEntry(1,1)}};
-//            double[] evalues = Helpers.getEigenvalues(covMatrix);
-//            double largestEvalue = Math.max(evalues[0],evalues[1]);
-//            double smallestEvalue = Math.min(evalues[0],evalues[1]);
-//            double[] evector = Helpers.getEigenvector(covMatrix, largestEvalue);
-//            double rot = Math.atan(evector[1] / evector[0]);
-//            /* This angle is between -pi -> pi, adjust 0->2pi */
-//            if (rot<0)
-//                rot = rot + 2*Math.PI;
-//            /* Ch-square distribution for two degrees freedom: 1.39 equiv 50% (i.e. CEP), 5.991 equiv 95% C.I, 4.605 equiv 90% C.I, 9.210 equiv 99% C.I */
-//            double half_major_axis_length = Math.sqrt(largestEvalue)*1.39; // Orig used: 2*Math.sqrt(9.210*largestEvalue);
-//            double half_minor_axis_length = Math.sqrt(smallestEvalue)*1.39;
-//
-////            this.efusionListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], half_major_axis_length*10000, half_minor_axis_length*10000, rot);
-////
-////            // TODO, load up a state buffer in the process manager????
-////            //    THIS doesn't work, different GM object
-////            //this.geoMission.getResultBuffer().put(target.getId(), new GeoResult(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], major, minor, rot));
-////            this.internalListener.result(geoMission.getGeoId(),target.getId(),latLon[0],latLon[1], half_major_axis_length*10000, half_minor_axis_length*10000, rot);
-////        //}
-//
-//        // NOTE: THESE listener calls required for AL_0
-//
-//
-//        if (this.geoMission.getOutputFilterState() && kmlFileHelpers !=null) {
-//            kmlFileHelpers.writeCurrentExports(this.geoMission);
-//        }
-//
-//        if (this.geoMission.getOutputKml()) {
-//            KmlFileStaticHelpers.exportGeoMissionToKml(this.geoMission);
-//        }
-//    }
-
-//    public void reinitialiseFilter() {
-//        /* Select two assets by random and use their middle point */
-//        Random rand = new Random();
-//        List<Asset> assetList = new ArrayList<Asset>(this.geoMission.getAssets().values());
-//        Asset randAssetA = assetList.get(rand.nextInt(assetList.size()));
-//        assetList.remove(randAssetA);
-//        Asset randAssetB = assetList.get(rand.nextInt(assetList.size()));
-//        log.debug("Finding rudimentary start point between two random observations: "+randAssetA.getId()+","+randAssetB.getId());
-//
-//        double[] start_x_y = findRudimentaryStartPoint(randAssetA, randAssetB, -500);
-//        log.debug("(Re) Filter start point: "+start_x_y[0]+","+start_x_y[1]);
-//        double[] initStateData = {start_x_y[0], start_x_y[1], 1, 1};
-//        log.info("(Re) Init State Data Easting/Northing: "+initStateData[0]+","+initStateData[1]+",1,1");
-//        double[] latLonStart = Helpers.convertUtmNthingEastingToLatLng(initStateData[0], initStateData[1], geoMission.getLatZone(), geoMission.getLonZone());
-//        log.info("(Re) Init start point: "+latLonStart[0]+","+latLonStart[1]);
-//        RealVector Xinit = new ArrayRealVector(initStateData);
-//        Xk = Xinit;
-//    }
-//
-//    public void resetCovariances(){
-//        log.debug("Resetting covariances, from: "+Pk);
-//        Pk = Pinit.scalarMultiply(1000.0);
-//        log.debug("Resetting covariances, to: "+Pk);
-//    }
 
     public synchronized void setStaged_observations(Map<Long, Observation> staged_observations) {
         this.staged_observations = staged_observations;

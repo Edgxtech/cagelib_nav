@@ -10,3 +10,6 @@ build/
 output/*.kml
 TESTS.txt
 DEBUG.txt
+TODO.txt
+SNIPPETS.txt
+unused
