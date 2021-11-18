@@ -21,8 +21,14 @@
             <url>http://akmasoft.com/nexus/content/repositories/releases</url>
         </repository>
     </repositories>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Maven</name>
+            <url>https://maven.pkg.github.com/ausstaker/cagelib_nav</url>
+        </repository>
+    </distributionManagement>
     <build>
-
         <resources>
             <resource>
                 <directory>src/main/java</directory>
