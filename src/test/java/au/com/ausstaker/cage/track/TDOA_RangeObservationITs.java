@@ -21,7 +21,7 @@
 //import java.util.Timer;
 //
 ///**
-// * @author Timothy Edge (timmyedge)
+// * @author edge2ipi (https://github.com/Ausstaker)
 // */
 //public class TDOA_RangeObservationITs implements EfusionListener {
 //

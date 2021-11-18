@@ -1,6 +1,6 @@
 package au.com.ausstaker.cage.util;
 
-import com.sun.corba.se.spi.monitoring.StatisticsAccumulator;
+//import com.sun.corba.se.spi.monitoring.StatisticsAccumulator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import au.com.ausstaker.cage.EfusionProcessManager;
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 /**
  * Simulate new observations following target
- * @author Timothy Edge (timmyedge)
+ * @author edge2ipi (https://github.com/Ausstaker)
  */
 public class SimulatedTargetObserver extends TimerTask {
 

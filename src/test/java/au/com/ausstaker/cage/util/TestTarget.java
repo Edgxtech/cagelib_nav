@@ -5,7 +5,7 @@ import au.com.ausstaker.cage.model.Target;
 import java.util.List;
 
 /**
- * @author Timothy Edge (timmyedge)
+ * @author edge2ipi (https://github.com/Ausstaker)
  */
 public class TestTarget extends Target {
     Boolean provide_range;

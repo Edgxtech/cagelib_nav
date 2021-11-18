@@ -3,7 +3,7 @@ package au.com.ausstaker.cage.util;
 import au.com.ausstaker.cage.model.Asset;
 
 /**
- * @author Timothy Edge (timmyedge)
+ * @author edge2ipi (https://github.com/Ausstaker)
  */
 public class TestAsset extends Asset {
     Boolean provide_range;

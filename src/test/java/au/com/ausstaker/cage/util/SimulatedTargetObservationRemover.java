@@ -8,7 +8,7 @@ import java.util.*;
 
 /**
  * Remove random simulated observation
- * @author Timothy Edge (timmyedge)
+ * @author edge2ipi (https://github.com/Ausstaker)
  */
 public class SimulatedTargetObservationRemover extends TimerTask {
 
