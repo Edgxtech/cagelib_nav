@@ -257,7 +257,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                         }
 
                         d = obs.getMeas() * 180 / Math.PI;
-                        //log.debug("AOA innovation: " + f_est + ", vs d: " + d);
                     }
 
                     RealMatrix toInvert = (H.multiply(Pk).multiply(H.transpose()).add(Rk));
@@ -475,12 +474,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         double smallestEvalue = Math.min(evalues[0],evalues[1]);
         log.debug("Evalues: "+evalues);
         double[] evector = Helpers.getEigenvector(covMatrix, largestEvalue);
-        /* Alternative is to use this
-         *  RealMatrix J2 = new Array2DRowRealMatrix(covMatrix);
-            EigenDecomposition eig = new EigenDecomposition(J2);
-            double[] evalues = eig.getRealEigenvalues();
-            log.debug("#4 E-values: "+evalues[0]+","+evalues[1]);
-            log.debug("#1 E-vector: "+evector[0]+","+evector[1]);*/
         double rot = Math.atan(evector[1] / evector[0]);
         /* This angle is between -pi -> pi, adjust 0->2pi */
         if (rot<0)
