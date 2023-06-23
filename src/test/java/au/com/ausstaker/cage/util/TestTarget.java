@@ -14,8 +14,8 @@ public class TestTarget extends Target {
     List<String> tdoa_target_ids;
     double true_lat;
     double true_lon;
-    double lat_move; // = 0.001;
-    double lon_move; // = 0.001;
+    double lat_move;
+    double lon_move;
 
     public Boolean getProvide_range() {
         return provide_range;

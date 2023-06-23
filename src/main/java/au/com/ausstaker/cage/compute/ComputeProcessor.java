@@ -15,15 +15,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Extended Kalman Filter Fusion Processor
- * @author edge2ipi (https://github.com/Ausstaker)
+ * @author stake1edge (https://github.com/Ausstaker)
  */
 public class ComputeProcessor implements Callable<ComputeResults> {
 
     private static final Logger log = LoggerFactory.getLogger(ComputeProcessor.class);
 
-    private EfusionListener efusionListener; // push results to user client
+    // user client inteface
+    private EfusionListener efusionListener;
 
-    private EfusionListener internalListener; // to push results to processListener for buffering
+    // processListener interface for buffering
+    private EfusionListener internalListener;
 
     private GeoMission geoMission;
 
@@ -84,7 +86,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         // Determine an initial guess
         double[] start_x_y;
         if (this.geoMission.getFilterUseSpecificInitialCondition()) {
-            //double[] init_utm = Helpers.convertLatLngToUtmNthingEasting(this.geoMission.getFilterSpecificInitialLat(), this.geoMission.getFilterSpecificInitialLon());
             double[] init_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(this.geoMission.getFilterSpecificInitialLat(), this.geoMission.getFilterSpecificInitialLon(), this.geoMission.getLatZone(), this.geoMission.getLonZone());
             start_x_y = new double[]{init_utm[1], init_utm[0]};
         }
@@ -96,12 +97,10 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                 Asset randAssetA = assetList.get(rand.nextInt(assetList.size()));
                 assetList.remove(randAssetA);
                 Asset randAssetB = assetList.get(rand.nextInt(assetList.size()));
-                //log.debug("Finding rudimentary start point between two random observations: " + randAssetA.getId() + "," + randAssetB.getId());
                 start_x_y = findRudimentaryStartPoint(randAssetA, randAssetB, (Math.random() - 0.5) * 100000);
                 log.debug("Using RANDOM initial condition: near asset(s) ['" + randAssetA.getId() + "' & '" + randAssetB.getId() + "']: " + start_x_y[1] + ", " + start_x_y[0]);
             } else {
                 Asset asset = assetList.get(0);
-                //double[] asset_utm = Helpers.convertLatLngToUtmNthingEasting(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1]);
                 double[] asset_utm = Helpers.convertLatLngToUtmNthingEastingSpecificZone(asset.getCurrent_loc()[0], asset.getCurrent_loc()[1], this.geoMission.getLatZone(), this.geoMission.getLonZone());
                 start_x_y = new double[]{asset_utm[1] + 5000, asset_utm[0] - 5000};
                 log.debug("Using RANDOM initial condition: near asset [" + asset.getId() + "]: " + start_x_y[1] + ", " + start_x_y[0]);
@@ -111,17 +110,15 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
         RealVector Xinit = new ArrayRealVector(start_x_y);
 
-        // Set initial process noise data
-        /* Uses defaults - overridden by some implementations (required for pure tdoa processing) */
-        geoMission.setFilterProcessNoise(eye.scalarMultiply(0.01).getData()); //setFilterProcessNoise(new double[][]{{0.01, 0, 0, 0}, {0, 0.01 ,0, 0}, {0, 0, 0.01, 0}, {0, 0, 0 ,0.01}});
+        /* Set initial process noise data. Uses defaults - overridden by some implementations (required for pure tdoa processing) */
+        geoMission.setFilterProcessNoise(eye.scalarMultiply(0.01).getData());
         log.debug("Set filter process noise data as: "+eye.scalarMultiply(0.01));
 
         Xk = Xinit;
         Pk = Pinit.scalarMultiply(0.01);
-        log.debug("Running Fix Execution with Init State: "+Xk);
-        log.debug("Running Fix Execution with Init State Covariance: "+Pk);
+        log.debug("Running Fix Execution with Init State: "+Xk+", Init State Covariance: "+Pk);
 
-        log.trace("Initialising Stage Observations as current observations, #: "+this.geoMission.observations.size());
+        log.trace("Initialising Staged Observations as current observations, #: "+this.geoMission.observations.size());
         setStaged_observations(this.geoMission.observations);
 
         double[][] measurementNoiseData = {{geoMission.getFilterMeasurementError()}};
@@ -132,8 +129,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
     }
 
     public void setObservations(Map<Long, Observation> observations) {
-        /// NOTE, this cannot have any new targets to process, since it will affect the size of state matrices
-        // then this step "int[] stateIndexes = stateIndexMap.get(obs.getTargetId());" will be null
+        /// NOTE, cannot have any new targets to process, since it will affect the size of state matrices
         Comparator<Map.Entry<Long, Observation>> valueComparator = new Comparator<Map.Entry<Long, Observation>>() {
             @Override
             public int compare(Map.Entry<Long, Observation> e1, Map.Entry<Long, Observation> e2) {
@@ -163,12 +159,10 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
         running.set(true);
 
-        // Initialise this just so the starting results dispatch functions
+        // Initialise this just so the starting results can be dispatched
         innov = new ArrayRealVector(innovd);
         P_innov = new Array2DRowRealMatrix(P_innovd);
 
-        // TODO, replace this with new dispatch method???
-        //dispatchResult(Xk);
         GeolocationResult geolocationResult = summariseResult(Xk, GeolocationResultStatus.in_progress, null);
         ComputeResults computeResults = new ComputeResults();
         computeResults.setGeolocationResult(geolocationResult);
@@ -212,7 +206,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
             Pk = (Thi.multiply(Pk).multiply(Thi.transpose())).add(Qu);
 
-//            /* reinitialise various collections */
+            /* reinitialise various collections */
             innov = new ArrayRealVector(innovd);
             P_innov = new Array2DRowRealMatrix(P_innovd);
             filterObservationDTOs.removeAllElements();
@@ -227,7 +221,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
                     xk = Xk.getEntry(0);
                     yk = Xk.getEntry(1);
-                    // REMOVED MULTI TGT FOR SNET
 
                     double f_est = 0.0;
                     double d = 0.0;
@@ -235,7 +228,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
                     if (obs.getObservationType().equals(ObservationType.range)) {
 
-                        H = recalculateH(obs.getX(), obs.getY(), xk, yk);
+                        H = recalculateH_Range(obs.getX(), obs.getY(), xk, yk);
 
                         f_est = Math.sqrt(Math.pow((obs.getX() - xk), 2) + Math.pow(obs.getY() - yk, 2));
 
@@ -262,11 +255,9 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                     RealMatrix toInvert = (H.multiply(Pk).multiply(H.transpose()).add(Rk));
                     RealMatrix Inverse = (new LUDecomposition(toInvert)).getSolver().getInverse();
 
-                    K = Pk.multiply(H.transpose()).multiply(Inverse); // DEPRECATED.scalarMultiply(this.geoMission.getFilterRangeBias());
+                    K = Pk.multiply(H.transpose()).multiply(Inverse);
 
                     double rk = d - f_est;
-
-                    /* '360-0 Conundrum' adjustment - REMOVED to SNIPPETs */
 
                     RealVector innov_ = K.scalarMultiply(rk).getColumnVector(0);
 
@@ -296,94 +287,91 @@ public class ComputeProcessor implements Callable<ComputeResults> {
                     }
                 }
 
-            /* Export Result */
-            if ((Calendar.getInstance().getTimeInMillis() - startTime) > this.geoMission.getDispatchResultsPeriod()) {
+                /* Export Result */
+                if ((Calendar.getInstance().getTimeInMillis() - startTime) > this.geoMission.getDispatchResultsPeriod()) {
 
-                Target target = this.geoMission.getTarget();
+                    Target target = this.geoMission.getTarget();
 
-                /* A measure of residual changes the filter intends to make - using delta_x/y innovation data */
-                double residual = Math.abs((innov.getEntry(0) + innov.getEntry(1)));
-                // ADDED in _nav: Normalise the residual measurement
-                residual = residual / this.observations.size();
+                    /* A measure of residual changes the filter intends to make - using delta_x/y innovation data */
+                    double residual = Math.abs((innov.getEntry(0) + innov.getEntry(1)));
+                    // ADDED in _nav: Normalise the residual measurement
+                    residual = residual / this.observations.size();
 
-                // ADDED in _nav: Long-long time cut-off
-                if ((Calendar.getInstance().getTimeInMillis() - universalStartTime) > 7500) {
-                    log.debug("Filter has run for max allowable time, breaking execution. The geometry did not lend itself to a geolocation result");
-                    status=GeolocationResultStatus.hung;
-                    status_message="The compute process hung after processing for long time, if the residual is large, this indicates that the geometry of observations do not lend themselves to a single geolocation point and the result is not useable";
-                    break;
-                }
-
-                log.trace("Residual: "+residual+", vs filterDispatchResidualError: "+this.geoMission.getFilterDispatchResidualThreshold());
-                // NOTE: if residual threshold not met here, will be stuck in loop
-                if (residual < this.geoMission.getFilterDispatchResidualThreshold()) {
-                    log.debug("Measurement Error: "+geoMission.getFilterMeasurementError());
-                    log.debug("target: [" + target.getId() + "]: Dispatching Result From # Observations: " + this.observations.size());
-                    log.debug("target: [" + target.getId() + "]: Residual Movements (Normalised): " + residual);
-                    log.debug("target: [" + target.getId() + "]: Residual Innovation: " + innov);
-                    log.debug("target: [" + target.getId() + "]: Covariance: " + Pk);
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("Printing observation utilisation data for # observations: "+filterObservationDTOs.size());
-                        for (FilterObservationDTO obs_state : filterObservationDTOs) {
-                            double f_est_adj = obs_state.getF_est();
-                            if (obs_state.getObs().getObservationType().equals(ObservationType.tdoa)) {
-                                f_est_adj = f_est_adj / Helpers.SPEED_OF_LIGHT;
-                            } else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
-                                f_est_adj = f_est_adj * Math.PI / 180;
-                            }
-                            log.debug("Observation utilisation: asset:" + obs_state.getObs().getAssetId() +", Target: "+obs_state.getObs().getTargetId()+ ", type: " + obs_state.getObs().getObservationType().name() + ", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas() + ", innov: " + obs_state.getInnov());
-                        }
+                    // ADDED in _nav: time cut-off
+                    if ((Calendar.getInstance().getTimeInMillis() - universalStartTime) > 7500) {
+                        log.debug("Filter has run for max allowable time, breaking execution. The geometry did not lend itself to a geolocation result");
+                        status=GeolocationResultStatus.hung;
+                        status_message="The compute process hung after processing for long time, if the residual is large, this indicates that the geometry of observations do not lend themselves to a single geolocation point and the result is not useable";
+                        break;
                     }
 
-                    startTime = Calendar.getInstance().getTimeInMillis();
+                    log.trace("Residual: "+residual+", vs filterDispatchResidualError: "+this.geoMission.getFilterDispatchResidualThreshold());
+                    // NOTE: if residual threshold not met here, will be stuck in loop
+                    if (residual < this.geoMission.getFilterDispatchResidualThreshold()) {
+                        log.debug("Measurement Error: "+geoMission.getFilterMeasurementError());
+                        log.debug("target: [" + target.getId() + "]: Dispatching Result From # Observations: " + this.observations.size());
+                        log.debug("target: [" + target.getId() + "]: Residual Movements (Normalised): " + residual);
+                        log.debug("target: [" + target.getId() + "]: Residual Innovation: " + innov);
+                        log.debug("target: [" + target.getId() + "]: Covariance: " + Pk);
 
-                    geolocationResult = summariseResult(Xk, GeolocationResultStatus.in_progress, null);
-                    computeResults = new ComputeResults();
-                    computeResults.setGeolocationResult(geolocationResult);
-                    computeResults.setGeoId(this.geoMission.getGeoId());
-
-                    /* Dispatch Result to listeners */
-                    dispatchResult(computeResults);
-
-                    // If all targets are below threshold then break
-                    if (geoMission.getMissionMode().equals(MissionMode.fix)) {
-
-                        /// DEVING
-                        log.debug("Residual: "+residual+", vs filterMeasurementError: "+this.geoMission.getFilterMeasurementError());
-                        if (residual < this.geoMission.getFilterMeasurementError()/10) {
-
-                            if (residual < this.geoMission.getFilterConvergenceResidualThreshold()) {  /// ORIGINAL
-
-                                log.debug("Exiting since this is a FIX Mode run and filter has converged to threshold");
-                                status = GeolocationResultStatus.ok;
-                                running.set(false);
-                                break;
+                        if (log.isDebugEnabled()) {
+                            log.debug("Printing observation utilisation data for # observations: "+filterObservationDTOs.size());
+                            for (FilterObservationDTO obs_state : filterObservationDTOs) {
+                                double f_est_adj = obs_state.getF_est();
+                                if (obs_state.getObs().getObservationType().equals(ObservationType.tdoa)) {
+                                    f_est_adj = f_est_adj / Helpers.SPEED_OF_LIGHT;
+                                } else if (obs_state.getObs().getObservationType().equals(ObservationType.aoa)) {
+                                    f_est_adj = f_est_adj * Math.PI / 180;
+                                }
+                                log.debug("Observation utilisation: asset:" + obs_state.getObs().getAssetId() +", Target: "+obs_state.getObs().getTargetId()+ ", type: " + obs_state.getObs().getObservationType().name() + ", f_est(adj): " + f_est_adj + ",d: " + obs_state.getObs().getMeas() + ", innov: " + obs_state.getInnov());
                             }
                         }
-                    } else {
-                        log.debug("This is a Tracking mode run, using latest observations (as held in staging) and continuing...");
+
+                        startTime = Calendar.getInstance().getTimeInMillis();
+
+                        geolocationResult = summariseResult(Xk, GeolocationResultStatus.in_progress, null);
+                        computeResults = new ComputeResults();
+                        computeResults.setGeolocationResult(geolocationResult);
+                        computeResults.setGeoId(this.geoMission.getGeoId());
+
+                        /* Dispatch Result to listeners */
+                        dispatchResult(computeResults);
+
+                        // If all targets are below threshold then break
+                        if (geoMission.getMissionMode().equals(MissionMode.fix)) {
+
+                            /// DEVING
+                            log.debug("Residual: "+residual+", vs filterMeasurementError: "+this.geoMission.getFilterMeasurementError());
+                            if (residual < this.geoMission.getFilterMeasurementError()/10) {
+
+                                if (residual < this.geoMission.getFilterConvergenceResidualThreshold()) {  /// ORIGINAL
+                                    log.debug("Exiting since this is a FIX Mode run and filter has converged to threshold");
+                                    status = GeolocationResultStatus.ok;
+                                    running.set(false);
+                                    break;
+                                }
+                            }
+                        } else {
+                            log.debug("This is a Tracking mode run, using latest observations (as held in staging) and continuing...");
 
                             /* Resynch latest observations, and reinitialise with current state estimate */
-                        log.debug("# Staged observations: " + this.staged_observations.size());
-                        setObservations(this.staged_observations);
+                            log.debug("# Staged observations: " + this.staged_observations.size());
+                            setObservations(this.staged_observations);
+                        }
+                    } else {
+                        log.trace("Residual not low enough to export result: " + residual);
                     }
-                } else {
-                    log.trace("Residual not low enough to export result: " + residual);
                 }
             }
-        }
 
-        geolocationResult = summariseResult(Xk, status, status_message);
-        computeResults = new ComputeResults();
-        computeResults.setGeolocationResult(geolocationResult);
-        computeResults.setGeoId(this.geoMission.getGeoId());
-        /* Dispatch Result to listeners - DEPRECATED */
-        //dispatchResult(computeResults);
-        return computeResults;
+            geolocationResult = summariseResult(Xk, status, status_message);
+            computeResults = new ComputeResults();
+            computeResults.setGeolocationResult(geolocationResult);
+            computeResults.setGeoId(this.geoMission.getGeoId());
+            return computeResults;
     }
 
-    public RealMatrix recalculateH(double x_rssi, double y_rssi, double Xk1, double Xk2) {
+    public RealMatrix recalculateH_Range(double x_rssi, double y_rssi, double Xk1, double Xk2) {
 
         double R1 = Math.sqrt(Math.pow((x_rssi-Xk1),2) + Math.pow(y_rssi-Xk2,2));
 
@@ -461,8 +449,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
 
     public GeolocationResult summariseResult(RealVector Xk, GeolocationResultStatus status, String status_message) {
 
-        log.debug("Summarising Result, using latzone: "+this.geoMission.getLatZone()+", lonzone: "+this.geoMission.getLonZone());
-        log.debug("Summarising Result, computed UTM: "+Xk.getEntry(0)+","+Xk.getEntry(1));
+        log.debug("Summarising Result, using latzone: "+this.geoMission.getLatZone()+", lonzone: "+this.geoMission.getLonZone()+", computed UTM: "+Xk.getEntry(0)+","+Xk.getEntry(1));
         double[] latLon = Helpers.convertUtmNthingEastingToLatLng(Xk.getEntry(0),Xk.getEntry(1), this.geoMission.getLatZone(), this.geoMission.getLonZone());
         log.debug("Summarising Result, computed lat: "+latLon[0]+", Lon: "+latLon[1]);
 
@@ -484,8 +471,7 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         this.geoMission.getTarget().setElp_major(half_major_axis_length*10000); /* UTM -> [m]: X10^4 */
         this.geoMission.getTarget().setElp_minor(half_minor_axis_length*10000);
         this.geoMission.getTarget().setElp_rot(rot);
-        log.debug("Half minor axis: "+half_minor_axis_length);
-        log.debug("Half major axis: "+half_major_axis_length);
+        log.debug("Half minor axis: "+half_minor_axis_length+", Half major axis: "+half_major_axis_length);
 
         /* A measure of the aggreance by all measurements */
         //double residual_rk = findResidualRk(filterExecution.getFilterObservationDTOs());
@@ -496,7 +482,6 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         log.debug("Dispatching Result From # Observations: " + this.observations.size());
         log.debug("Result: "+latLon[0]+","+latLon[1]);
         log.debug("Residual Movements: "+residual);
-        //log.debug("Residual Measurement Delta: "+residual_rk);
         log.debug("Residual Innovation: "+innov);
         log.debug("Covariance: "+Pk);
 
@@ -509,13 +494,10 @@ public class ComputeProcessor implements Callable<ComputeResults> {
         geolocationResult.setResidual(residual);
         geolocationResult.setStatus(status);
         geolocationResult.setStatus_message(status_message);
-        //geolocationResult.setResidual_rk(residual_rk);
-
         return geolocationResult;
     }
 
     public void dispatchResult(ComputeResults computeResults) {
-
         this.geoMission.getTarget().setCurrent_loc(new double[]{computeResults.getGeolocationResult().getLat(),computeResults.getGeolocationResult().getLon()});
         this.efusionListener.result(computeResults);
 

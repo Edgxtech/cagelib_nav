@@ -24,9 +24,6 @@ public class EfusionValidator {
         if (geoMission.getMissionMode()==null) {
             throw new ConfigurationException("Mode was not specified: fix or track");
         }
-//        else if (geoMission.getTargets().getId()==null || geoMission.getTargets().getName()==null) { // TODO, add this back
-//            throw new ConfigurationException("Target was not specified correctly");
-//        }
         if (geoMission.getGeoId()==null) {
             throw new ConfigurationException("Mission id was not set: specify a unique string label");
         }
@@ -77,21 +74,6 @@ public class EfusionValidator {
         else if (observation.getObservationType().equals(ObservationType.tdoa)) {
             log.warn("Ignoring TDOA meas, not implemented");
             throw new ObservationException("Ignoring TDOA meas, not implemented");
-
-//            double lat_b = Math.abs(observation.getLat_b()); double lon_b = Math.abs(observation.getLon_b());
-//            if (lat_b < 0 || lat_b>90) {
-//                throw new ObservationException("(second) Assets latitude should range between +- 0->90");
-//            }
-//            if (lon_b < 0 || lon_b>180) {
-//                throw new ObservationException("(second) Assets longitude should range between +- 0->180");
-//            }
-//            if (observation.getTargetId_b()==null || observation.getTargetId_b().isEmpty()) {
-//                throw new ObservationException("No (second) Asset Id was specified");
-//            }
-//
-//            if (observation.getMeas()==0.0) {
-//                throw new ObservationException("No observation tdoa value was specified for observation type "+observation.getObservationType().name());
-//            }
         }
         else if (observation.getObservationType().equals(ObservationType.aoa)) {
             if (observation.getMeas()==0.0) {

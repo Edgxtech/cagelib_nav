@@ -22,7 +22,6 @@ public class SimulatedTargetObservationRemover extends TimerTask {
         Random rand = new Random();
         List<Observation> observations = new ArrayList<Observation>(efusionProcessManager.getGeoMission().getObservations().values());
         Observation obs = observations.get(rand.nextInt(observations.size()));
-        //efusionProcessManager.getGeoMission().getObservations().remove(obs.getId());
         try {
             efusionProcessManager.removeObservation(obs);
         }

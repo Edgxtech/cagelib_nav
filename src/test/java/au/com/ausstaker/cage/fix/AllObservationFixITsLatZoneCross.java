@@ -33,16 +33,10 @@ public class AllObservationFixITsLatZoneCross implements EfusionListener {
     SimulatedTargetObserver simulatedTargetObserver = new SimulatedTargetObserver();
 
     /* Some common asset coords to reuse */
-    // GLADSTONE, QLD area
     double[] asset_a_coords = new double[]{-23.740424, 151.273656};  // CURTIS ISLAND
     double[] asset_b_coords = new double[]{-23.877916, 151.227849}; // AIRPORT
     double[] asset_c_coords = new double[]{-24.081459, 151.651622}; // TURKEY BEACH
     double[] asset_d_coords = new double[]{-24.212426, 151.905762}; // AGNES WATER
-
-    // Alternates for investigation
-    //double[] asset_a_coords = new double[]{-24.010424, 151.273656};  // CURTIS ISLAND
-    //double[] asset_b_coords = new double[]{-24.057916, 151.227849}; // AIRPORT
-    //double[] asset_c_coords = new double[]{-23.881459, 151.651622}; // TURKEY BEACH
 
     TestAsset asset_a = new TestAsset();
     TestAsset asset_b = new TestAsset();
@@ -138,7 +132,7 @@ public class AllObservationFixITsLatZoneCross implements EfusionListener {
 
     @Override
     public void result(ComputeResults computeResults) {
-        log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+computeResults.getGeoId()+", Lat: "+computeResults.getGeolocationResult().getLat()+", Lon: "+computeResults.getGeolocationResult().getLon()+", CEP major: "+computeResults.getGeolocationResult().getElp_long()+", CEP minor: "+computeResults.getGeolocationResult().getElp_short()+", CEP rotation: "+computeResults.getGeolocationResult().getElp_rot());
+        log.debug("Result Received at Process Manager: Result -> GeoId: "+computeResults.getGeoId()+", Lat: "+computeResults.getGeolocationResult().getLat()+", Lon: "+computeResults.getGeolocationResult().getLon()+", CEP major: "+computeResults.getGeolocationResult().getElp_long()+", CEP minor: "+computeResults.getGeolocationResult().getElp_short()+", CEP rotation: "+computeResults.getGeolocationResult().getElp_rot());
         log.warn("WARNING, not adding to results buffer in Process Manager REVISIT LATER");
         //this.resultBuffer.put(target_id, new GeoResult(geoId,target_id,lat,lon,cep_elp_maj,cep_elp_min,cep_elp_rot));
     }

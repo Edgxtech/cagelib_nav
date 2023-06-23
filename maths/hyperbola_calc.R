@@ -1,21 +1,3 @@
- # double[] r_a_utm = Helpers.convertLatLngToUtmNthingEasting(r_a.getLat(), r_a.getLon()); // RETURNS IN [NTHING===Y , EASTING===X]
- # double[] r_b_utm = Helpers.convertLatLngToUtmNthingEasting(r_b.getLat(), r_b.getLon());
-
- # double c = Math.sqrt(Math.pow((r_a_utm[1] - r_b_utm[1]), 2) + Math.pow((r_a_utm[0] - r_b_utm[0]), 2)) / 2; // focus length from origin, +-c respectively
- # double a = (obs.getMeas() * Helpers.SPEED_OF_LIGHT) / 2;
- # double b = Math.sqrt(Math.abs(Math.pow(c, 2) - Math.pow(a, 2))); // c = sqrt(a^2+b^2)
- # double ca = (r_b_utm[1] - r_a_utm[1]) / (2 * c);
- # double sa = (r_b_utm[0] - r_a_utm[0]) / (2 * c); //# COS and SIN of rot angle
- # for (double t = -2; t <= 2; t += 0.1) {
- 	# double X = a * Math.cosh(t);
- 	# double Y = b * Math.sinh(t); //# Hyperbola branch
- 	# double x = (r_a_utm[1] + r_b_utm[1]) / 2 + X * ca - Y * sa; //# Rotated and translated
-    # double y = (r_a_utm[0] + r_b_utm[0]) / 2 + X * sa + Y * ca;
-    # UTMRef utmMeas = new UTMRef(x, y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
-    # LatLng ltln = utmMeas.toLatLng();
-    # measurementHyperbola.add(new double[]{ltln.getLat(), ltln.getLng()});
-  # }
-                    
 c <- 2^2
 print(c)
 
@@ -60,8 +42,6 @@ for(t in seq(-2, 2, 0.1)) {
 }
 
 print(x_y)
-#plot(x_y$x,x_y$y) ## PLOTS Single hyperbola branch
-
 
 ## ATTEMPT to find t @ given point X,Y (i.e. assets location): 6,6, for given ddoa (to focus).
 ##      need to get a though, distance to vertex
@@ -73,7 +53,6 @@ ddoa <- 1.1
 c <- ddoa / 2
 # acosh ~= ln(x + sqrt(x^2 - 1))
 
-
 ## Attempting to solve a=sqrt(c2 - b2), acosh(X/a) == asihn(Y/b)
 ## WOLFRAM INPUT: solve (X / (sqrt(c^2-b^2))) = (Y/b + sqrt(1+Y^2/b^2) + 1/(Y/b + sqrt(1+Y^2/b^2))) / 2 for b
 ##  THIS is not a bad resource: https://mathworld.wolfram.com/Hyperbola.html
@@ -84,8 +63,3 @@ print (paste('X: ',X,', Y: ',Y,', c: ',c,', b: ',b,', a: ',a))
 xv <- a * cosh(0)
 yv <- b * sinh(0)
 print (paste('Xv: ',xv,', Yv: ',yv))
-
-
- 
-
-

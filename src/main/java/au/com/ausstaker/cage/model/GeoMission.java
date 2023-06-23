@@ -16,7 +16,6 @@ public class GeoMission {
     MissionMode missionMode;
 
     /* required - name and id */
-    //Target target;  // REPLACE IN NAV
     Map<String,Target> targets;
 
     /* required */
@@ -26,7 +25,7 @@ public class GeoMission {
     char latZone;
     int lonZone;
 
-    /* Settings if choosing for fuzer to output to KML
+    /* Settings if choosing to output KML
     /*  - Switch
     /*  - Output filename
     /*  - Which artefacts to show: Geo result, measurements and CEPs */
@@ -89,9 +88,6 @@ public class GeoMission {
 
     public int primaryUTMLonZone;
 
-    // TODO, consider holding a longer history here
-    //Map<String,GeoResult> resultBuffer = new HashMap<String,GeoResult>();
-
     public MissionMode getMissionMode() {
         return missionMode;
     }
@@ -99,15 +95,6 @@ public class GeoMission {
     public void setMissionMode(MissionMode missionMode) {
         this.missionMode = missionMode;
     }
-
-//    public Target getTarget() {
-//        return target;
-//    }
-//
-//    public void setTarget(Target target) {
-//        this.target = target;
-//    }
-
 
     public Map<String, Target> getTargets() {
         return targets;
@@ -324,15 +311,6 @@ public class GeoMission {
     public void setFilterSpecificInitialLon(Double filterSpecificInitialLon) {
         this.filterSpecificInitialLon = filterSpecificInitialLon;
     }
-
-//    public Map<String, GeoResult> getResultBuffer() {
-//        return resultBuffer;
-//    }
-//
-//    public void setResultBuffer(Map<String, GeoResult> resultBuffer) {
-//        this.resultBuffer = resultBuffer;
-//    }
-
 
     public ComputeResults getComputeResults() {
         return computeResults;

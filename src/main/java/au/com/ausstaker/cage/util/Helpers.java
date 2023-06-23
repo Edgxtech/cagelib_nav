@@ -30,7 +30,6 @@ public class Helpers {
     }
 
     public static double[] convertLatLngToUtmNthingEastingSpecificZone(double lat, double lng, char latZone, int lngZone) {
-        //UTMRef utm = latLonToSpecificZoneUTMRef(lat, lng, lngZone);
         UTMRef utm = toUTMRefSpecificZone(lat, lng, latZone, lngZone);
         return new double[]{utm.getNorthing(),utm.getEasting()};
     }
@@ -56,7 +55,6 @@ public class Helpers {
         double latitude = lat;
         double latitudeRad = latitude * 0.017453292519943295D;
         double longitudeRad = longitude * 0.017453292519943295D;
-        //int longitudeZone = (int)Math.floor((longitude + 180.0D) / 6.0D) + 1; // REMOVED, USED CUSTOM
         if (latitude >= 56.0D && latitude < 64.0D && longitude >= 3.0D && longitude < 12.0D) {
             longitudeZone = 32;
         }
@@ -75,7 +73,6 @@ public class Helpers {
 
         double longitudeOrigin = (double)((longitudeZone - 1) * 6 - 180 + 3);
         double longitudeOriginRad = longitudeOrigin * 0.017453292519943295D;
-        //char UTMZone_orig = UTMRef.getUTMLatitudeZoneLetter(latitude); // REMOVED, USED CUSTOM
         double ePrimeSquared = eSquared / (1.0D - eSquared);
         double n = a / Math.sqrt(1.0D - eSquared * Math.sin(latitudeRad) * Math.sin(latitudeRad));
         double t = Math.tan(latitudeRad) * Math.tan(latitudeRad);
@@ -92,19 +89,6 @@ public class Helpers {
     }
 
     public static double[] getEigenvalues(double[][] matrix) {
-//        double a = matrix[0][0];
-//        double b = matrix[0][1];
-//        double c = matrix[1][0];
-//        double d = matrix[1][1];
-//        System.out.println("a: "+a+", d: "+d);
-//        if (a==d) { // Shitty Fix. This manual approach suffers from producing NaN when a==d, prefer the approach below
-//            d=d+1.0e-18;
-//        }
-//        double e1 = ((a+d) + Math.sqrt( Math.pow(a-d,2) + 4*b*c))/2;
-//        double e2 = ((a+d) - Math.sqrt( Math.pow(a-d,2) + 4*b*c))/2;
-//        System.out.println("e1: "+e1+", e2: "+e2);
-//        return new double[]{e1,e2};
-
         RealMatrix J2 = new Array2DRowRealMatrix(matrix);
         EigenDecomposition eig = new EigenDecomposition(J2);
         double[] evaluesC = eig.getRealEigenvalues();
@@ -198,5 +182,34 @@ public class Helpers {
                 hm.put(array[i],1);
         }
         return temp;
+    }
+
+    // tanh−1x= 1/2 ln((1−x)/(1+x))
+    public static double Arctanh(double x) throws Exception
+    {
+        if (Math.abs(x) > 1)
+            throw new ObservationException("Error computing hyperbola");
+        return 0.5 * Math.log((1 + x) / (1 - x));
+    }
+
+    // cosh−1x=ln(x+sqrt(x^2−1))
+    public static double Arccosh(double x) throws Exception
+    {
+        return Math.log(x + Math.sqrt(x*x - 1.0));
+    }
+
+    public static double getMean(double[] data) {
+        double sum = 0.0;
+        for(double a : data)
+            sum += a;
+        return sum/data.length;
+    }
+
+    public static double getVariance(double[] data) {
+        double mean = getMean(data);
+        double temp = 0;
+        for(double a :data)
+            temp += (a-mean)*(a-mean);
+        return temp/(data.length-1);
     }
 }

@@ -64,7 +64,6 @@ public class KmlFileStaticHelpers {
 
             /* PLOT the measurements */
             if (gm.getShowMeas()) {
-
                 Element style = doc.createElement("Style");
                 style.setAttribute("id", "measurementStyle");
                 Element measStyle = doc.createElement("LineStyle");
@@ -120,69 +119,8 @@ public class KmlFileStaticHelpers {
 
     public static void exportTargetTrueLocation(Document doc, Element dnode, GeoMission geoMission) {
         try {
-            //for (Target target : geoMission.getTargets().values()) {
             Target target = geoMission.getTarget();
-                if (target.getTrue_current_loc() != null) {
-                    Element crosshairStyle = doc.createElement("Style");
-                    crosshairStyle.setAttribute("id", "crosshairStyle");
-
-                    Element crosshairIconStyle = doc.createElement("IconStyle");
-                    crosshairIconStyle.setAttribute("id", "crosshairIconStyle");
-
-                    Element crosshairIcon = doc.createElement("Icon");
-
-                    Element crosshairIconHref = doc.createElement("href");
-                /* http://maps.google.com/mapfiles/kml/shapes/star.png */
-                    crosshairIconHref.appendChild(doc.createTextNode("styles/true_target.png"));
-
-
-                    crosshairStyle.appendChild(crosshairIconStyle);
-                    crosshairIcon.appendChild(crosshairIconHref);
-                    crosshairIconStyle.appendChild(crosshairIcon);
-                    dnode.appendChild(crosshairStyle);
-
-                    Element PFplacemark = doc.createElement("Placemark");
-                    dnode.appendChild(PFplacemark);
-
-                    Element name = doc.createElement("name");
-                    name.appendChild(doc.createTextNode(target.getName()));
-                    PFplacemark.appendChild(name);
-
-                    PFplacemark.appendChild(crosshairStyle);
-
-                    Element descrip = doc.createElement("description");
-                    descrip.appendChild(doc.createTextNode("<![CDATA[\n" +
-                            "          <p><font color=\"red\">" + target.getId() + " : " + target.getName() + "\n" +
-                            "          <b>(True Location) is here</b></font></p>"));
-                    PFplacemark.appendChild(descrip);
-
-                    Element PFpoint = doc.createElement("Point");
-                    Element coordinates = doc.createElement("coordinates");
-
-                    Text textNode = doc.createTextNode(target.getTrue_current_loc()[1] + "," + target.getTrue_current_loc()[0]);
-                    coordinates.appendChild(textNode);
-                    PFpoint.appendChild(coordinates);
-
-                    PFplacemark.appendChild(PFpoint);
-                } else {
-                    log.debug("Attempted to export true location however none was available");
-                }
-
-        } catch (Exception e) {
-            log.error("Error exporting true location: " + e.toString());
-            e.printStackTrace();
-        }
-    }
-
-    public static void exportTargetEstimationResult(Document doc, Element dnode, GeoMission geoMission) {
-        try
-        {
-//            log.debug("Exporting # targets estimated posn: "+geoMission.getTargets().size());
-//            for (Target target : geoMission.getTargets().values()) {
-            // REMOVED MULTI TGT FOR SNET
-
-            Target target = geoMission.getTarget();
-
+            if (target.getTrue_current_loc() != null) {
                 Element crosshairStyle = doc.createElement("Style");
                 crosshairStyle.setAttribute("id", "crosshairStyle");
 
@@ -192,7 +130,9 @@ public class KmlFileStaticHelpers {
                 Element crosshairIcon = doc.createElement("Icon");
 
                 Element crosshairIconHref = doc.createElement("href");
-                crosshairIconHref.appendChild(doc.createTextNode("styles/estimated_target.png"));
+                /* http://maps.google.com/mapfiles/kml/shapes/star.png */
+                crosshairIconHref.appendChild(doc.createTextNode("styles/true_target.png"));
+
 
                 crosshairStyle.appendChild(crosshairIconStyle);
                 crosshairIcon.appendChild(crosshairIconHref);
@@ -203,7 +143,7 @@ public class KmlFileStaticHelpers {
                 dnode.appendChild(PFplacemark);
 
                 Element name = doc.createElement("name");
-                name.appendChild(doc.createTextNode(target.getId()));
+                name.appendChild(doc.createTextNode(target.getName()));
                 PFplacemark.appendChild(name);
 
                 PFplacemark.appendChild(crosshairStyle);
@@ -211,18 +151,71 @@ public class KmlFileStaticHelpers {
                 Element descrip = doc.createElement("description");
                 descrip.appendChild(doc.createTextNode("<![CDATA[\n" +
                         "          <p><font color=\"red\">" + target.getId() + " : " + target.getName() + "\n" +
-                        "          <b>Located here</b></font></p>"));
+                        "          <b>(True Location) is here</b></font></p>"));
                 PFplacemark.appendChild(descrip);
 
                 Element PFpoint = doc.createElement("Point");
                 Element coordinates = doc.createElement("coordinates");
 
-                Text textNode = doc.createTextNode(target.getCurrent_loc()[1] + "," + target.getCurrent_loc()[0]);
+                Text textNode = doc.createTextNode(target.getTrue_current_loc()[1] + "," + target.getTrue_current_loc()[0]);
                 coordinates.appendChild(textNode);
                 PFpoint.appendChild(coordinates);
 
                 PFplacemark.appendChild(PFpoint);
-            //}
+            } else {
+                log.debug("Attempted to export true location however none was available");
+            }
+
+        } catch (Exception e) {
+            log.error("Error exporting true location: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+
+    public static void exportTargetEstimationResult(Document doc, Element dnode, GeoMission geoMission) {
+        try
+        {
+            Target target = geoMission.getTarget();
+
+            Element crosshairStyle = doc.createElement("Style");
+            crosshairStyle.setAttribute("id", "crosshairStyle");
+
+            Element crosshairIconStyle = doc.createElement("IconStyle");
+            crosshairIconStyle.setAttribute("id", "crosshairIconStyle");
+
+            Element crosshairIcon = doc.createElement("Icon");
+
+            Element crosshairIconHref = doc.createElement("href");
+            crosshairIconHref.appendChild(doc.createTextNode("styles/estimated_target.png"));
+
+            crosshairStyle.appendChild(crosshairIconStyle);
+            crosshairIcon.appendChild(crosshairIconHref);
+            crosshairIconStyle.appendChild(crosshairIcon);
+            dnode.appendChild(crosshairStyle);
+
+            Element PFplacemark = doc.createElement("Placemark");
+            dnode.appendChild(PFplacemark);
+
+            Element name = doc.createElement("name");
+            name.appendChild(doc.createTextNode(target.getId()));
+            PFplacemark.appendChild(name);
+
+            PFplacemark.appendChild(crosshairStyle);
+
+            Element descrip = doc.createElement("description");
+            descrip.appendChild(doc.createTextNode("<![CDATA[\n" +
+                    "          <p><font color=\"red\">" + target.getId() + " : " + target.getName() + "\n" +
+                    "          <b>Located here</b></font></p>"));
+            PFplacemark.appendChild(descrip);
+
+            Element PFpoint = doc.createElement("Point");
+            Element coordinates = doc.createElement("coordinates");
+
+            Text textNode = doc.createTextNode(target.getCurrent_loc()[1] + "," + target.getCurrent_loc()[0]);
+            coordinates.appendChild(textNode);
+            PFpoint.appendChild(coordinates);
+
+            PFplacemark.appendChild(PFpoint);
         }
         catch(Exception egeo){
             log.trace("error exporting geo position to kml");
@@ -232,91 +225,87 @@ public class KmlFileStaticHelpers {
 
     public static void exportTargetEstimationCEP(Document doc, Element dnode, GeoMission geoMission, GeolocationResult geolocationResult, boolean highlight) {
         try {
-            try
-            {
-                log.debug("Exporting CEP point");
-                List<double[]> geometryCoords = new ArrayList<double[]>();
+            log.debug("Exporting CEP point");
+            List<double[]> geometryCoords = new ArrayList<double[]>();
 
-                double lat = geolocationResult.getLat();
-                double lon = geolocationResult.getLon();
-                double elp_long = geolocationResult.getElp_long();
-                double elp_short = geolocationResult.getElp_short();
-                double elp_rot = geolocationResult.getElp_rot();
+            double lat = geolocationResult.getLat();
+            double lon = geolocationResult.getLon();
+            double elp_long = geolocationResult.getElp_long();
+            double elp_short = geolocationResult.getElp_short();
+            double elp_rot = geolocationResult.getElp_rot();
 
-                double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEastingSpecificZone(lat, lon, geoMission.getLatZone(), geoMission.getLonZone());
-                log.debug("UTM Target Loc: "+utm_target_loc[0]+", "+utm_target_loc[1]);
+            double[] utm_target_loc = Helpers.convertLatLngToUtmNthingEastingSpecificZone(lat, lon, geoMission.getLatZone(), geoMission.getLonZone());
+            log.debug("UTM Target Loc: "+utm_target_loc[0]+", "+utm_target_loc[1]);
 
-                // temp swapped bottom row to cos,sin
-                //double[][] M_rot = new double[][]{{Math.cos(geoMission.getTarget().getElp_rot()), -Math.sin(geoMission.getTarget().getElp_rot())}, {Math.sin(geoMission.getTarget().getElp_rot()), Math.cos(geoMission.getTarget().getElp_rot())}};
-                double[][] M_rot = new double[][]{{Math.cos(elp_rot), -Math.sin(elp_rot)}, {Math.sin(elp_rot), Math.cos(elp_rot)}};
+            // temp swapped bottom row to cos,sin
+            //double[][] M_rot = new double[][]{{Math.cos(geoMission.getTarget().getElp_rot()), -Math.sin(geoMission.getTarget().getElp_rot())}, {Math.sin(geoMission.getTarget().getElp_rot()), Math.cos(geoMission.getTarget().getElp_rot())}};
+            double[][] M_rot = new double[][]{{Math.cos(elp_rot), -Math.sin(elp_rot)}, {Math.sin(elp_rot), Math.cos(elp_rot)}};
 
-                for (double theta = (1 / 2) * Math.PI; theta <= (5 / 2) * Math.PI; theta += 0.2) {
-                    double a = elp_long * Math.cos(theta);
-                    double b = elp_short * Math.sin(theta);
+            for (double theta = (1 / 2) * Math.PI; theta <= (5 / 2) * Math.PI; theta += 0.2) {
+                double a = elp_long * Math.cos(theta);
+                double b = elp_short * Math.sin(theta);
 
-                    double x = M_rot[0][0] * (a) + M_rot[0][1] * (b);
-                    double y = M_rot[1][0] * (a) + M_rot[1][1] * (b);
+                double x = M_rot[0][0] * (a) + M_rot[0][1] * (b);
+                double y = M_rot[1][0] * (a) + M_rot[1][1] * (b);
 
-                    UTMRef utmMeas = new UTMRef(x + utm_target_loc[1], y + utm_target_loc[0], geoMission.getLatZone(), geoMission.getLonZone());
-                    LatLng ltln = utmMeas.toLatLng();
-                    double[] measPoint = {ltln.getLat(), ltln.getLng()};
-                    geometryCoords.add(measPoint);
-                }
-
-                Element style = doc.createElement("Style");
-                style.setAttribute("id", "cepStyle");
-
-                Element polyStyle = doc.createElement("PolyStyle");
-                Element color = doc.createElement("color");
-
-                if (highlight) {
-                    color.appendChild(doc.createTextNode("3f2002e4"));
-                }
-                else {
-                    color.appendChild(doc.createTextNode("501478C8"));
-                }
-
-                polyStyle.appendChild(color);
-                style.appendChild(polyStyle);
-
-                dnode.appendChild(style);
-                Element polyPlacemark = doc.createElement("Placemark");
-                dnode.appendChild(polyPlacemark);
-
-                Element name = doc.createElement("name");
-                name.appendChild(doc.createTextNode(geoMission.getTarget().getId()+":cep"));
-                polyPlacemark.appendChild(name);
-
-                Element styleUrl = doc.createElement("styleUrl");
-                styleUrl.appendChild(doc.createTextNode("#cepStyle"));
-
-                polyPlacemark.appendChild(styleUrl);
-
-                Element polygon = doc.createElement("Polygon");
-
-                Element altitudeMode = doc.createElement("altitudeMode");
-                altitudeMode.appendChild(doc.createTextNode("relativeToGround"));
-                polygon.appendChild(altitudeMode);
-
-                Element outer = doc.createElement("outerBoundaryIs");
-                Element cepOuterRing = doc.createElement("LinearRing");
-                Element cepCircleCoords = doc.createElement("coordinates");
-
-                Iterator circlePoints = geometryCoords.iterator();
-                while (circlePoints.hasNext())
-                {
-                    double[] point = (double[])circlePoints.next();
-
-                    cepCircleCoords.appendChild(doc.createTextNode(point[1]+","+point[0]+",200 \n"));
-                }
-                cepOuterRing.appendChild(cepCircleCoords);
-
-                outer.appendChild(cepOuterRing);
-                polygon.appendChild(outer);
-
-                polyPlacemark.appendChild(polygon);
+                UTMRef utmMeas = new UTMRef(x + utm_target_loc[1], y + utm_target_loc[0], geoMission.getLatZone(), geoMission.getLonZone());
+                LatLng ltln = utmMeas.toLatLng();
+                double[] measPoint = {ltln.getLat(), ltln.getLng()};
+                geometryCoords.add(measPoint);
             }
-            catch(Exception ecep){log.trace("error exporting cep circle to kml"); ecep.printStackTrace();}
+
+            Element style = doc.createElement("Style");
+            style.setAttribute("id", "cepStyle");
+
+            Element polyStyle = doc.createElement("PolyStyle");
+            Element color = doc.createElement("color");
+
+            if (highlight) {
+                color.appendChild(doc.createTextNode("3f2002e4"));
+            }
+            else {
+                color.appendChild(doc.createTextNode("501478C8"));
+            }
+
+            polyStyle.appendChild(color);
+            style.appendChild(polyStyle);
+
+            dnode.appendChild(style);
+            Element polyPlacemark = doc.createElement("Placemark");
+            dnode.appendChild(polyPlacemark);
+
+            Element name = doc.createElement("name");
+            name.appendChild(doc.createTextNode(geoMission.getTarget().getId()+":cep"));
+            polyPlacemark.appendChild(name);
+
+            Element styleUrl = doc.createElement("styleUrl");
+            styleUrl.appendChild(doc.createTextNode("#cepStyle"));
+
+            polyPlacemark.appendChild(styleUrl);
+
+            Element polygon = doc.createElement("Polygon");
+
+            Element altitudeMode = doc.createElement("altitudeMode");
+            altitudeMode.appendChild(doc.createTextNode("relativeToGround"));
+            polygon.appendChild(altitudeMode);
+
+            Element outer = doc.createElement("outerBoundaryIs");
+            Element cepOuterRing = doc.createElement("LinearRing");
+            Element cepCircleCoords = doc.createElement("coordinates");
+
+            Iterator circlePoints = geometryCoords.iterator();
+            while (circlePoints.hasNext())
+            {
+                double[] point = (double[])circlePoints.next();
+
+                cepCircleCoords.appendChild(doc.createTextNode(point[1]+","+point[0]+",200 \n"));
+            }
+            cepOuterRing.appendChild(cepCircleCoords);
+
+            outer.appendChild(cepOuterRing);
+            polygon.appendChild(outer);
+
+            polyPlacemark.appendChild(polygon);
         } catch (Exception e) {
             log.error(e.toString());
             e.printStackTrace();

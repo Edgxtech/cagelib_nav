@@ -33,7 +33,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
 
     ComputeProcessor computeProcessor;
 
-//    // TODO, consider holding a longer history here
     Map<String,GeoResult> resultBuffer = new HashMap<String,GeoResult>();
 
     public EfusionProcessManager(EfusionListener actionListener) {
@@ -89,7 +88,7 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
             }
         }
 
-        /* Determine most prominent UTM zone accross all assets, so a single UTM is used for copmutation */
+        /* Determine most prominent UTM zone across all assets, so a single UTM is used for computation */
         int lonZone;
         char latZone;
         if (this.geoMission.getAssets().size()==1) {
@@ -120,7 +119,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
             obs.setY_latZone(latZone);
             obs.setX_lonZone(lonZone);
 
-            //double[] utm_coords = Helpers.convertLatLngToUtmNthingEasting(obs.getLat(), obs.getLon());
             double[] utm_coords = Helpers.convertLatLngToUtmNthingEastingSpecificZone(obs.getLat(), obs.getLon(), latZone, lonZone);
             obs.setY(utm_coords[0]);
             obs.setX(utm_coords[1]);
@@ -131,8 +129,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                 if (obs.getObservationType().equals(ObservationType.range)) {
                     List<double[]> measurementCircle = new ArrayList<double[]>();
                     for (double theta = (1 / 2) * Math.PI; theta <= (5 / 2) * Math.PI; theta += 0.2) {
-                        // TODO, need to find the zone number for each point??
-    //                    UTMRef utmMeas = new UTMRef(obs.getMeas() * Math.cos(theta) + obs.getX(), obs.getMeas() * Math.sin(theta) + obs.getY(), this.geoMission.getLatZone(), this.geoMission.getLonZone());
                         UTMRef utmMeas = new UTMRef(obs.getMeas() * Math.cos(theta) + obs.getX(), obs.getMeas() * Math.sin(theta) + obs.getY(), obs.getY_latZone(), obs.getX_lonZone());
                         LatLng ltln = utmMeas.toLatLng();
                         double[] measPoint = {ltln.getLat(), ltln.getLng()};
@@ -144,18 +140,11 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
 
                 /* TDOA MEASUREMENT - DEVELOPMENTAL CODE NOT USED */
                 if (obs.getObservationType().equals(ObservationType.tdoa)) {
-                    log.debug("Defining obs hyperbola geometry");
                     List<double[]> measurementHyperbola = new ArrayList<double[]>();
 
-                    // COMPROMISE, use the current target estimated locations
-                    //   -- However since this is the addObservation routine, may not even have a state estimate yet
-                    //  For the given observation target id's, check if there is a suitable state estimate available for those targets
-                    //double[][] utm_x_y = computeProcessor.getCurrentEstimatesForTargets
-                    // ALT, if there are current state estimates for the two targets, plot hyperbola from them
+                    // Attempt to use the current target estimated locations. For the given observation target id's, check if there is a suitable state estimate available for those targets
                     GeoResult r_a = this.resultBuffer.get(obs.getTargetId());
                     GeoResult r_b = this.resultBuffer.get(obs.getTargetId_b());
-                    /// TODO, problem here GM object from computeProcessor has the buffer, this one doesn't
-                    log.debug("Geo result_a null: "+(r_a==null) + ", Geo result_b null: "+(r_b==null));
 
                     if ((r_a!=null) && (r_b!=null)) {
                         log.debug("Using target position for TDOA plot 1/2: "+r_a.toString());
@@ -173,7 +162,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                             double Y = b * Math.sinh(t); //# Hyperbola branch
                             double x = (r_a_utm[1] + r_b_utm[1]) / 2 + X * ca - Y * sa; //# Rotated and translated
                             double y = (r_a_utm[0] + r_b_utm[0]) / 2 + X * sa + Y * ca;
-                            //UTMRef utmMeas = new UTMRef(x, y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
                             UTMRef utmMeas = new UTMRef(x, y, obs.getY_latZone(), obs.getX_lonZone());
                             LatLng ltln = utmMeas.toLatLng();
                             measurementHyperbola.add(new double[]{ltln.getLat(), ltln.getLng()});
@@ -192,16 +180,17 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
                     double b = obs.getY() - Math.tan(obs.getMeas())*obs.getX();
                     double fromVal=0; double toVal=0;
                     double x_run = Math.abs(Math.cos(obs.getMeas()))*5000;
-                    if (obs.getMeas()>Math.PI/2 && obs.getMeas()<3*Math.PI/2) { // negative-x plane projection
+                    if (obs.getMeas()>Math.PI/2 && obs.getMeas()<3*Math.PI/2) {
+                        // negative-x plane projection
                         fromVal=-x_run; toVal=0;
                     }
-                    else { // positive-x plane projection
+                    else {
+                        // positive-x plane projection
                         fromVal=0; toVal=x_run;
                     }
 
                     for (double t = obs.getX()+fromVal; t<= obs.getX()+toVal; t += 100) {
                         double y = Math.tan(obs.getMeas())*t + b;
-                        //UTMRef utmMeas = new UTMRef(t, y, this.geoMission.getLatZone(), this.geoMission.getLonZone());
                         UTMRef utmMeas = new UTMRef(t, y, obs.getY_latZone(), obs.getX_lonZone());
                         LatLng ltln = utmMeas.toLatLng();
                         double[] measPoint = {ltln.getLat(), ltln.getLng()};
@@ -218,11 +207,10 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
             log.debug(o.getId()+"; lonZone: "+o.getX_lonZone()+", latZone: "+o.getY_latZone());
         }
 
-        /* Update the live observations - if a 'tracking' mission type */
+        /* Update live observations - if a 'tracking' mission type */
         if (computeProcessor !=null && computeProcessor.isRunning()) {
             log.trace("Algorithm was running, will update observations list for tracking mode runs only");
             if (this.geoMission.getMissionMode().equals(MissionMode.track)) {
-                // TEMP REMOVED TO FIX BUG
 //                log.trace("Setting OBSERVATIONS in the filter, new size: "+this.geoMission.observations.size());
 //                computeProcessor.setObservations(this.geoMission.observations);
             }
@@ -266,23 +254,14 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
         return geoMission;
     }
 
-    /* ADDED for SNET, configured for single target */
     public void reconfigureTarget(Target target) throws Exception {
         this.geoMission.setTarget(target);
-
         EfusionValidator.validateTarget(target);
-    }
-
-    // TEMPORARY hold - may need to also reinitialise the state matrices based on number of targets
-    public void reconfigureTargets(Map<String,Target> targets) throws Exception {
-        log.debug("Reconfiguring with # targets: "+targets.size());
-        this.geoMission.setTargets(targets);
-        EfusionValidator.validateTargets(targets.values());
     }
 
     public void configure(GeoMission geoMission) throws Exception {
         this.geoMission = geoMission;
-        log.debug("Configuring GeMission: "+geoMission.toString());
+        log.debug("Configuring GeoMission: "+geoMission.toString());
         EfusionValidator.validate(geoMission);
         /* Uses defaults - overridden by some implementations (required for pur tdoa processing) */
         Properties properties = new Properties();
@@ -407,7 +386,6 @@ public class EfusionProcessManager implements Serializable, EfusionListener {
     @Override
     public void result(ComputeResults computeResults) {
         log.debug("Result Received at Process Manager: "+"Result -> GeoId: "+computeResults.getGeoId()+", Lat: "+computeResults.getGeolocationResult().getLat()+", Lon: "+computeResults.getGeolocationResult().getLon()+", CEP major: "+computeResults.getGeolocationResult().getElp_long()+", CEP minor: "+computeResults.getGeolocationResult().getElp_short()+", CEP rotation: "+computeResults.getGeolocationResult().getElp_rot());
-        log.warn("WARNING, not adding to results buffer in Process Manager REVISIT LATER");
-        //this.resultBuffer.put(target_id, new GeoResult(geoId,target_id,lat,lon,cep_elp_maj,cep_elp_min,cep_elp_rot));
+        log.warn("WARNING, not adding to results buffer in Process Manager");
     }
 }

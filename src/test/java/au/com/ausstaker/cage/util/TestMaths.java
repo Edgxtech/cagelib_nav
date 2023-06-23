@@ -47,7 +47,6 @@ public class TestMaths {
         double meas_range = ObservationTestHelpers.getRangeMeasurement(asset_y, asset_x, true_y, true_x, 0.0);
         log.debug("Meas range: " + meas_range);
 
-
         // Range meas 2 - haversine
         double R = 6371e3;
         double l1 = lat1 * Math.PI/180;
@@ -172,10 +171,6 @@ public class TestMaths {
 
     @Test
     public void testUTMConversion() {
-        //double lat = 51.51;
-        //double lon = -0.03;
-//        double lat = -31.9;
-//        double lon = 115.98;
         double lat = -32.0;
         double lon = 115.85;
         double[] utm_a = Helpers.convertLatLngToUtmNthingEasting(lat, lon);
@@ -188,10 +183,5 @@ public class TestMaths {
 
         UTMRef utmRef = Helpers.toUTMRefSpecificZone(lat, lon, 'J', 50);
         log.debug("UTM (specific2): "+utmRef.getNorthing()+", "+utmRef.getEasting());
-
-//        11:40:22.849 [main] DEBUG tech.tgo.cage.util.TestMaths:181 - UTM (natural): 6470194.755756934,403548.8617473827
-//        11:40:22.853 [main] DEBUG tech.tgo.cage.util.TestMaths:182 - UTM (specific): 6470194.755756934,403548.8617473827
-//        11:40:22.854 [main] DEBUG tech.tgo.cage.util.TestMaths:185 - UTM natural zone: J, 50
-//        11:40:22.855 [main] DEBUG tech.tgo.cage.util.TestMaths:188 - UTM (specific2): 6470194.755756934, 403548.8617473827
     }
 }

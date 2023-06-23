@@ -56,9 +56,7 @@ public class Observation {
     /* Target Id */
     String targetId;
 
-    String targetId_b; // For TDOA only
-//    double xb; // For TDOA only  -- IRRELEVANT for nav implementation
-//    double yb; // For TDOA only
+    String targetId_b; // For TDOA only - not used in _nav
     double lat_b; // For TDOA only
     double lon_b; // For TDOA only
 
@@ -107,31 +105,6 @@ public class Observation {
     public void setAssetId(String assetId) {
         this.assetId = assetId;
     }
-
-//    public double getXb() {
-//        return xb;
-//    }
-//
-//    public void setXb(double xb) {
-//        this.xb = xb;
-//    }
-//
-//    public double getYb() {
-//        return yb;
-//    }
-//
-//    public void setYb(double yb) {
-//        this.yb = yb;
-//    }
-
-//    public String getAssetId_b() {
-//        return assetId_b;
-//    }
-//
-//    public void setAssetId_b(String assetId_b) {
-//        this.assetId_b = assetId_b;
-//    }
-
 
     public String getTargetId_b() {
         return targetId_b;

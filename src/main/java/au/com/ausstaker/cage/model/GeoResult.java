@@ -25,7 +25,6 @@ public class GeoResult {
 
     public String toString() {
         return "Result -> GeoId: "+(geoId!=null ? geoId : "null")+", TargetId: "+(target_id!=null ? target_id : "null");
-        // +", Lat: "+lat+", Lon: "+lon+", CEP major: "+cep_elp_maj+", CEP minor: "+cep_elp_min+", CEP rotation: "+cep_elp_rot
     }
 
     public String getGeoId() {

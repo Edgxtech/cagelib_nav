@@ -5,7 +5,6 @@ import au.com.ausstaker.cage.model.GeolocationResultStatus;
 import static java.util.Objects.isNull;
 
 public class GeolocationResult {
-    //Boolean processed_ok;
     GeolocationResultStatus status;
     String status_message;
     double residual;
