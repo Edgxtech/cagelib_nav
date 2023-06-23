@@ -40,18 +40,7 @@
 
         <plugins>
 
-            <!-- Makes the JAR executable, by configuring the plugin to use the included manifest file -->
-            <!--<plugin>-->
-                <!--<groupId>org.apache.maven.plugins</groupId>-->
-                <!--<artifactId>maven-jar-plugin</artifactId>-->
-                <!--<version>${maven.jar.plugin.version}</version>-->
-                <!--<configuration>-->
-                    <!--<archive>-->
-                        <!--<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>-->
-                    <!--</archive>-->
-                <!--</configuration>-->
-            <!--</plugin>-->
-            <!-- JaCoCo configuration - provides test coverage reports -->
+            <!-- JaCoCo configuration - test coverage reports -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -76,7 +65,6 @@
 
         <pluginManagement>
             <plugins>
-                <!-- CALL WHEN DEPLOYING fatjar to deployment server -->
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <configuration>
@@ -89,8 +77,8 @@
                     </configuration>
                     <executions>
                         <execution>
-                            <id>make-assembly</id> <!-- this is used for inheritance merges -->
-                            <phase>package</phase> <!-- bind to the packaging phase -->
+                            <id>make-assembly</id>
+                            <phase>package</phase>
                             <goals>
                                 <goal>single</goal>
                             </goals>
@@ -141,7 +129,6 @@
             <artifactId>commons-math3</artifactId>
             <version>3.6.1</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/uk.me.jstott/jcoord -->
         <dependency>
             <groupId>uk.me.jstott</groupId>
             <artifactId>jcoord</artifactId>
@@ -152,20 +139,10 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.7.21</version>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.gdal/gdal -->
-        <!--<dependency>-->
-            <!--<groupId>org.gdal</groupId>-->
-            <!--<artifactId>gdal</artifactId>-->
-            <!--<version>1.11.2</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.gdal</groupId>
             <artifactId>gdal</artifactId>
             <version>2.4.0</version>
         </dependency>
-        <!-- Thanks for using https://jar-download.com -->
-
     </dependencies>
 </project>
