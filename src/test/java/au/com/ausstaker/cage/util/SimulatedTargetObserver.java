@@ -97,7 +97,7 @@ public class SimulatedTargetObserver extends TimerTask {
                     }
                 }
 
-                /* NOT currently configured to use TDOA, disregard this section */
+                /* NOT currently configured to use TDOA, disregard */
                 if (asset.getProvide_tdoa() != null && asset.getProvide_tdoa() && testTarget.getTdoa_target_ids() != null && !testTarget.getTdoa_target_ids().isEmpty()) {
                     /* Second asset that is providing shared tdoa measurement */
                     for (String secondary_target_id : testTarget.getTdoa_target_ids()) {

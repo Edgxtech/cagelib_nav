@@ -181,20 +181,13 @@ public class AllObservationFixITsLonZoneCross implements EfusionListener {
     @Test
     public void testBottom_TwoAssets() throws Exception {
         /* Targets to be tracked by filter, specified by client */
-        //Map<String,Target> targets = new HashMap<String,Target>();
-        //targets.put(target_a.getId(),new Target(target_a.getId(),target_a.getName(),new Double[]{target_a.getTrue_lat(),target_a.getTrue_lon()}));
-        //targets.put(target_b.getId(),new Target(target_b.getId(),target_b.getName(),new Double[]{target_b.getTrue_lat(),target_b.getTrue_lon()}));
-        //efusionProcessManager.reconfigureTargets(targets);
-        //  REMOVED MULTIPLE TARGETS, SINCE NOT INTENDING TO ADDRESS THE DUEL TARGET TDOA PROBLEM
         efusionProcessManager.reconfigureTarget(target_a);
 
         /* Targets for the sim observer to report data on */
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_a.getId(), target_a);
-            //put(target_b.getId(), target_b);
             target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
-            //target_b.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
@@ -233,7 +226,6 @@ public class AllObservationFixITsLonZoneCross implements EfusionListener {
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_b.getId(), target_b);
-            //target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
@@ -355,7 +347,6 @@ public class AllObservationFixITsLonZoneCross implements EfusionListener {
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_d.getId(), target_d);
-            //target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
@@ -395,7 +386,6 @@ public class AllObservationFixITsLonZoneCross implements EfusionListener {
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_d.getId(), target_d);
-            //target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
@@ -406,9 +396,7 @@ public class AllObservationFixITsLonZoneCross implements EfusionListener {
         /* Assets to measure observations to/from */
         Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
         {{
-            //put(asset_a.getId(), asset_a);
             put(asset_b.getId(), asset_b);
-            //put(asset_c.getId(), asset_c);
             put(asset_d.getId(), asset_d);
         }};
         simulatedTargetObserver.setTestAssets(assets);
@@ -435,7 +423,6 @@ public class AllObservationFixITsLonZoneCross implements EfusionListener {
         Map<String, TestTarget> testTargets = new HashMap<String, TestTarget>()
         {{
             put(target_d.getId(), target_d);
-            //target_a.setTdoa_target_ids(Arrays.asList(new String[]{}));
         }};
         simulatedTargetObserver.setTestTargets(testTargets);
 
@@ -449,9 +436,7 @@ public class AllObservationFixITsLonZoneCross implements EfusionListener {
         /* Assets to measure observations to/from */
         Map<String, TestAsset> assets = new HashMap<String, TestAsset>()
         {{
-            //put(asset_a.getId(), asset_a);
             put(asset_b.getId(), asset_b);
-            //put(asset_c.getId(), asset_c);
             put(asset_d.getId(), asset_d);
         }};
         simulatedTargetObserver.setTestAssets(assets);
