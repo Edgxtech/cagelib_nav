@@ -12,7 +12,7 @@ Compound Geolocation Engine (CaGE) is a sensor fusion library which utilises an 
 
     /* Add to project dependencies */
     <dependency>
-        <groupId>au.com.ausstaker.cage</groupId>
+        <groupId>tech.edgx.cage</groupId>
         <artifactId>cagelib_nav</artifactId>
         <version>0.1</version>
     </dependency>
