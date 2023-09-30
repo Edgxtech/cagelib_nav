@@ -1,5 +1,5 @@
 # R routine - Calculate hyperbola
-# @author stake1edge
+# @author timmyedge
 c <- 2^2
 print(c)
 
