@@ -1,14 +1,14 @@
-CaGE Library - Navigation (cagelib_nav)
+# CaGE Library - Navigation (cagelib_nav)
 
-Compound Geolocation Engine (CaGE) is a sensor fusion library for position location and tracking
+## Compound Geolocation Engine (CaGE) is a sensor fusion library for position location and tracking
 
-Features
+## Features
 
     * Own location estimation with Tracking and Fix Mode
     * Takes sensor measurements including AOA and Range
     * Optional generation of KML result output, client implementation alternate
 
-How to Use
+## How to Use
 
     /* Add to project dependencies */
     <dependency>
@@ -85,9 +85,9 @@ How to Use
     }
     catch (Exception e) {}
 
-Copyright / License
+## Copyright / License
 
-    Copyright (c) Tgo Technology
+    Copyright (c) Edgx Technology
 
     This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
 
