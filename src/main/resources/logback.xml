@@ -23,7 +23,6 @@
         </encoder>
     </appender>
 
-    <logger name="au.com.ausstaker.cage" level="DEBUG" />
     <logger name="tech.edgx.cage.compute.ComputeProcessor" level="DEBUG" />
 
     <root level="DEBUG">
